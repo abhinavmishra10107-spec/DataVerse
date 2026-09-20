@@ -122,8 +122,96 @@ function conceptVisual(kind,key){const t=(kind==='oop'?OOP_TOPICS:DSA_TOPICS)[ke
  return common(t.title,`<div class="sort-visual"><div>50</div><b>→</b><div>20</div><b>→</b><div>40</div><b>→</b><div>10</div><p>Compare → move/swap → repeat → <strong>10, 20, 40, 50</strong></p></div>`);
 }
 function showConcept(kind){const key=$('concept-select').value;state.concept.topic=key;const t=(kind==='oop'?OOP_TOPICS:DSA_TOPICS)[key];$('concept-summary').innerHTML=`<b>${esc(t.title)}</b><span>${esc(t.summary)}</span>`;count(0);$('status').textContent='Concept ready';$('operation').textContent=t.title;setComplexity({time:t.time,space:t.space,note:'Concept lesson — complexity is shown only when it is meaningful.'});logSteps(t.steps);$('visualArea').innerHTML=conceptVisual(kind,key);$('animationPanel').classList.add('hidden');operationCount++;$('opCount').textContent=operationCount;history.push({module:kind==='oop'?'OOP':'DSA CONCEPTS',operation:t.title,input:'Concept lesson',result:t.summary,time:t.time});renderHistory();}
-function renderNotes(){const q=(($('notes-search')||{}).value||'').trim().toLowerCase();const filter=(($('notes-filter')||{}).value||'ALL');const rows=NOTES.filter(n=>(filter==='ALL'||n[0]===filter)&&(!q||n.join(' ').toLowerCase().includes(q)));$('visualArea').innerHTML=`<div class="notes-board"><div class="notes-tools"><input id="notes-search" value="${esc(q)}" placeholder="Search notes…" autocomplete="off"><select id="notes-filter"><option ${filter==='ALL'?'selected':''}>ALL</option><option ${filter==='OOP'?'selected':''}>OOP</option><option ${filter==='DSA'?'selected':''}>DSA</option><option ${filter==='Algorithms'?'selected':''}>Algorithms</option><option ${filter==='Analysis'?'selected':''}>Analysis</option></select></div><div class="notes-grid">${rows.map((n,i)=>`<article class="note-card"><small>${esc(n[0])}</small><h4>${esc(n[1])}</h4><p>${esc(n[2])}</p></article>`).join('')||'<div class="empty">No matching notes.</div>'}</div></div>`;count(rows.length);$('status').textContent=`${rows.length} notes`;$('operation').textContent='Study & Revision';setComplexity({time:'—',space:'—',note:'Use the search and category filter to revise concepts quickly. Detailed visual lessons are available under OOP Concepts and DSA Concepts.'});logSteps(['Select OOP Concepts or DSA Concepts for an interactive visualization.','Use Notes to revise definitions, relationships and common complexities.','Return to any data-structure module to practice the actual operation.']);$('animationPanel').classList.add('hidden');$('notes-search').addEventListener('input',renderNotes);$('notes-filter').addEventListener('change',renderNotes);}
+function renderNotes() {
+  const q = (($('notes-search') || {}).value || '').trim().toLowerCase();
+  const filter = (($('notes-filter') || {}).value || 'ALL');
 
+  const rows = NOTES.filter(n =>
+    (filter === 'ALL' || n[0] === filter) &&
+    (!q || n.join(' ').toLowerCase().includes(q))
+  );
+
+  $('visualArea').innerHTML = `
+    <div class="notes-board">
+
+      <div class="notes-tools">
+        <input
+          id="notes-search"
+          value="${esc(q)}"
+          placeholder="Search notes..."
+          autocomplete="off"
+        >
+
+        <select id="notes-filter">
+          <option ${filter === 'ALL' ? 'selected' : ''}>ALL</option>
+          <option ${filter === 'OOP' ? 'selected' : ''}>OOP</option>
+          <option ${filter === 'DSA' ? 'selected' : ''}>DSA</option>
+          <option ${filter === 'Algorithms' ? 'selected' : ''}>Algorithms</option>
+          <option ${filter === 'Analysis' ? 'selected' : ''}>Analysis</option>
+        </select>
+      </div>
+
+      <div class="notes-grid">
+
+        ${
+          rows.map(n => `
+            <article
+              class="note-card"
+              data-note="${esc(n[1])}"
+              tabindex="0"
+              role="button"
+              title="Click to open detailed notes for ${esc(n[1])}"
+            >
+              <small>${esc(n[0])}</small>
+
+              <h4>${esc(n[1])}</h4>
+
+              <p>${esc(n[2])}</p>
+
+              <span class="note-open-hint">
+                Click to open full explanation →
+              </span>
+            </article>
+          `).join('')
+          ||
+          '<div class="empty">No matching notes.</div>'
+        }
+
+      </div>
+
+    </div>
+  `;
+
+  count(rows.length);
+
+  $('status').textContent = `${rows.length} notes`;
+  $('operation').textContent = 'Study & Revision';
+
+  setComplexity({
+    time: '—',
+    space: '—',
+    note: 'Select a note to open the complete explanation.'
+  });
+
+  logSteps([
+    'Select any note card to open the detailed explanation.',
+    'Review the definition, key points, visual explanation and C++ example.',
+    'Use the Close button to return to the notes list.'
+  ]);
+
+  $('animationPanel').classList.add('hidden');
+
+  const search = $('notes-search');
+  const category = $('notes-filter');
+
+  if (search) {
+    search.addEventListener('input', renderNotes);
+  }
+
+  if (category) {
+    category.addEventListener('change', renderNotes);
+  }
+}
 function controls(){let h='';if(moduleName==='oop')h=conceptControls('oop');else if(moduleName==='dsa-concepts')h=conceptControls('dsa');else if(moduleName==='notes'){h='<div class="form"><div class="help"><b>Notes & Revision:</b> Search definitions, relationships and complexity reminders. The full notes collection appears in the visualization area.</div><button class="btn primary full" type="button" onclick="renderNotes()">Open Notes</button></div>';}else if(moduleName==='array')h=`<div class="form"><div class="two"><div class="field"><label>NUMBER OF ELEMENTS</label><input id="array-n" type="number" min="1" max="30" placeholder="5"></div><button class="btn" onclick="makeArrayFields()">Generate Input Fields</button></div><div id="arrayFields" class="generated-grid"></div><button class="btn primary full" onclick="run('create')">Create Array</button><div class="two"><div class="field"><label>INDEX</label><input id="array-index" type="number" placeholder="2"></div><div class="field"><label>VALUE</label><input id="array-value" type="number" placeholder="99"></div></div><div class="btns"><button class="btn primary" onclick="run('insert')">＋ Insert</button><button class="btn danger" onclick="run('delete')">− Delete</button><button class="btn" onclick="run('search')">⌕ Search</button><button class="btn" onclick="run('traverse')">→ Traverse</button></div><div class="help">Creation follows the same logic as a C++ loop: <b>for (int i = 0; i &lt; n; i++) cin &gt;&gt; arr[i];</b></div></div>`;
 else if(moduleName==='doubly-linked-list')h=`<div class="form"><div class="field"><label>VALUES</label><input id="dlinked-values" name="dlinked_values_fresh" autocomplete="off" spellcheck="false" placeholder="10,20,30,40"></div><button class="btn primary full" onclick="run('create')">Create Doubly Linked List</button><div class="two"><div class="field"><label>POSITION</label><input id="dlinked-index" name="dlinked_index_fresh" type="number" autocomplete="off" placeholder="1"></div><div class="field"><label>VALUE</label><input id="dlinked-value" name="dlinked_value_fresh" type="number" autocomplete="off" placeholder="99"></div></div><div class="btns"><button class="btn primary" onclick="run('insert')">＋ Insert</button><button class="btn danger" onclick="run('delete')">− Delete</button><button class="btn" onclick="run('traverse')">⇄ Traverse</button><button class="btn" onclick="run('reverse')">↶ Reverse</button></div><div class="help"><b>Two-way pointers:</b> PREV moves backward and NEXT moves forward. Try clicking a node after creation.</div></div>`;
 else if(moduleName==='linked-list')h=`<div class="form"><div class="field"><label>VALUES</label><input id="linked-values" name="linked_list_values_fresh" autocomplete="new-password" spellcheck="false" placeholder="10,20,30,40,50"></div><button class="btn primary full" onclick="run('create')">Create List</button><div class="two"><div class="field"><label>POSITION</label><input id="linked-index" name="linked_list_index_fresh" type="number" autocomplete="off" placeholder="1"></div><div class="field"><label>VALUE</label><input id="linked-value" name="linked_list_value_fresh" type="number" autocomplete="off" placeholder="99"></div></div><div class="btns"><button class="btn primary" onclick="run('insert')">＋ Insert</button><button class="btn danger" onclick="run('delete')">− Delete</button><button class="btn" onclick="run('traverse')">→ Traverse</button><button class="btn" onclick="run('reverse')">↶ Reverse</button></div></div>`;
