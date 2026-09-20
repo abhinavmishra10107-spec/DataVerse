@@ -1,0 +1,246 @@
+{
+  "Class & Object": {
+    "category": "OOP",
+    "title": "Class & Object",
+    "intro": "A class is a blueprint that defines the data and functions an object will have. An object is an instance of a class created from that blueprint.",
+    "bullets": [
+      "A class defines data members and member functions.",
+      "An object is a real instance created from a class.",
+      "Multiple objects can be created from one class.",
+      "In DataVerse, ArrayModule is a class and arrayModule is an object of that class."
+    ],
+    "example": "class Student\n{\npublic:\n    int age;\n};\n\nStudent s1;",
+    "visual": "CLASS\n┌────────────────────┐\n│ Student             │\n│ data: age           │\n│ function: display() │\n└──────────┬─────────┘\n           │ creates\n      ┌────┴────┐\n      │ OBJECT  │\n      │ s1      │\n      └─────────┘",
+    "viva": "Class = blueprint; Object = instance of a class."
+  },
+  "Encapsulation": {
+    "category": "OOP",
+    "title": "Encapsulation",
+    "intro": "Encapsulation is the process of bundling data and the functions that operate on that data into one unit while restricting direct access to internal data.",
+    "bullets": [
+      "Private data cannot be accessed directly from outside the class.",
+      "Public functions provide controlled access to the data.",
+      "It improves data safety and maintainability.",
+      "DataVerse's ArrayModule keeps its vector data private and exposes operations through public functions."
+    ],
+    "example": "class ArrayModule\n{\nprivate:\n    vector<int> data;\n\npublic:\n    void display();\n    void insertElement(int position, int value);\n};",
+    "visual": "OUTSIDE USER\n      │\n      ▼\n┌────────────────────────┐\n│      ArrayModule       │\n│                        │\n│  PRIVATE: data         │\n│       ▲                │\n│       │ controlled     │\n│       │ access         │\n│  PUBLIC: display()     │\n│          insert()      │\n└────────────────────────┘",
+    "viva": "Encapsulation = data + methods together with controlled access."
+  },
+  "Abstraction": {
+    "category": "OOP",
+    "title": "Abstraction",
+    "intro": "Abstraction means exposing the essential operation to the user while hiding the internal implementation details.",
+    "bullets": [
+      "The user sees what an operation does rather than every internal step.",
+      "Implementation details remain inside the class.",
+      "It reduces complexity for the user.",
+      "In DataVerse, insertElement(position, value) hides the shifting implementation."
+    ],
+    "example": "arrayModule.insertElement(2, 50);\n\n// User does not need to manually shift every element.",
+    "visual": "USER\n  │\n  │ insertElement(2,50)\n  ▼\n┌─────────────────────┐\n│   PUBLIC INTERFACE  │\n├─────────────────────┤\n│ validation          │\n│ create space        │\n│ shift elements      │\n│ insert value        │\n│ update state        │\n└─────────────────────┘",
+    "viva": "Abstraction = show essential functionality, hide implementation."
+  },
+  "Inheritance": {
+    "category": "OOP",
+    "title": "Inheritance",
+    "intro": "Inheritance is one of the fundamental concepts of Object-Oriented Programming (OOP) that allows a class to acquire the properties and behaviors of another class. It promotes code reusability by enabling new classes to extend existing classes instead of rewriting code.",
+    "bullets": [
+      "Allows derived classes to reuse members of an existing class.",
+      "Supports code reusability and hierarchical class design.",
+      "The existing class is called the base or parent class.",
+      "The new class is called the derived or child class.",
+      "Common forms are single, multilevel, multiple, hierarchical and hybrid inheritance."
+    ],
+    "example": "#include <iostream>\nusing namespace std;\n\nclass Animal\n{\npublic:\n    void sound()\n    {\n        cout << \"Animal makes a sound\" << endl;\n    }\n};\n\nclass Dog : public Animal\n{\npublic:\n    void bark()\n    {\n        cout << \"Dog barks\" << endl;\n    }\n};\n\nint main()\n{\n    Dog d;\n    d.sound();   // inherited\n    d.bark();    // own function\n}",
+    "visual": "                 ┌─────────────────┐\n                 │   ANIMAL CLASS   │\n                 │   Base / Parent  │\n                 └────────┬────────┘\n                          │\n              inherits    │\n          ┌───────────────┼───────────────┐\n          ▼               ▼               ▼\n   ┌────────────┐  ┌────────────┐  ┌────────────┐\n   │ DOG CLASS  │  │ CAT CLASS  │  │ COW CLASS  │\n   │  Derived   │  │  Derived   │  │  Derived   │\n   └────────────┘  └────────────┘  └────────────┘",
+    "viva": "Inheritance = IS-A relationship and code reuse. Example: Dog IS-A Animal."
+  },
+  "Polymorphism": {
+    "category": "OOP",
+    "title": "Polymorphism",
+    "intro": "Polymorphism means 'many forms'. The same interface or function name can produce different behavior depending on the situation.",
+    "bullets": [
+      "Compile-time polymorphism includes function overloading and operator overloading.",
+      "Runtime polymorphism commonly uses virtual functions and overriding.",
+      "It allows a common interface for different derived-class behaviors.",
+      "The original ArrayModule prototype does not explicitly implement runtime polymorphism."
+    ],
+    "example": "class Animal\n{\npublic:\n    virtual void sound() { cout << \"Animal\"; }\n};\n\nclass Dog : public Animal\n{\npublic:\n    void sound() override { cout << \"Dog\"; }\n};",
+    "visual": "             Animal*\n                │\n          calls sound()\n                │\n        ┌───────┴───────┐\n        ▼               ▼\n      Dog             Cat\n    \"Bark\"            \"Meow\"",
+    "viva": "Polymorphism = one interface, many forms/behaviors."
+  },
+  "Constructor & Destructor": {
+    "category": "OOP",
+    "title": "Constructor & Destructor",
+    "intro": "A constructor is a special member function that runs when an object is created. A destructor runs when the object's lifetime ends and is used for cleanup.",
+    "bullets": [
+      "A constructor has the same name as the class.",
+      "A constructor has no return type.",
+      "A destructor uses ~ followed by the class name.",
+      "Constructors can initialize data members.",
+      "C++ can provide compiler-generated constructors/destructors when they are not explicitly written."
+    ],
+    "example": "class Student\n{\npublic:\n    Student() { cout << \"Created\"; }\n    ~Student() { cout << \"Destroyed\"; }\n};",
+    "visual": "object created\n      ↓\n CONSTRUCTOR\n      ↓\n object initialized\n      ↓\n object used\n      ↓\n object lifetime ends\n      ↓\n  DESTRUCTOR",
+    "viva": "Constructor initializes; destructor cleans up."
+  },
+  "Composition": {
+    "category": "OOP",
+    "title": "Composition",
+    "intro": "Composition represents a HAS-A relationship in which one class contains an object of another class as a component.",
+    "bullets": [
+      "The containing class is built from other objects.",
+      "It supports modular system design.",
+      "DataVerse's ExperimentManager contains an ArrayModule object.",
+      "Composition is different from inheritance: HAS-A versus IS-A."
+    ],
+    "example": "class ExperimentManager\n{\nprivate:\n    ArrayModule arrayModule;\n};",
+    "visual": "┌─────────────────────────────┐\n│     ExperimentManager       │\n│                             │\n│   HAS-A                     │\n│   ┌─────────────────────┐   │\n│   │     ArrayModule     │   │\n│   └─────────────────────┘   │\n└─────────────────────────────┘",
+    "viva": "Composition = HAS-A relationship. Inheritance = IS-A relationship."
+  },
+  "Time & Space Complexity": {
+    "category": "DSA",
+    "title": "Time & Space Complexity",
+    "intro": "Complexity measures how the running time and memory requirements of an algorithm grow as the input size increases.",
+    "bullets": [
+      "Time complexity describes growth in execution steps.",
+      "Space complexity describes additional memory used.",
+      "Big-O expresses the growth rate for algorithm analysis.",
+      "Common classes include O(1), O(log n), O(n), O(n log n), and O(n²)."
+    ],
+    "example": "for (int i = 0; i < n; i++)\n{\n    cout << i;\n}\n\nTime: O(n)\nAuxiliary space: O(1)",
+    "visual": "Input n grows → work grows\n\nO(1)       ─────\nO(log n)   ─────╱\nO(n)       ────╱\nO(n²)      ───╱╱",
+    "viva": "Big-O focuses on growth rate rather than exact machine time."
+  },
+  "Array": {
+    "category": "DSA",
+    "title": "Array",
+    "intro": "An array stores elements in contiguous memory locations and provides index-based access.",
+    "bullets": [
+      "Elements are accessed using indexes.",
+      "Access by index is typically O(1).",
+      "Insertion/deletion in the middle may require shifting.",
+      "Arrays are useful when fast indexed access is important."
+    ],
+    "example": "int arr[4] = {10, 20, 30, 40};\n\nIndex:  0   1   2   3\nValue: 10  20  30  40",
+    "visual": "index   0     1     2     3\n       ┌────┬────┬────┬────┐\n       │ 10 │ 20 │ 30 │ 40 │\n       └────┴────┴────┴────┘",
+    "viva": "Array access O(1); middle insertion/deletion generally O(n)."
+  },
+  "Linked List": {
+    "category": "DSA",
+    "title": "Linked List",
+    "intro": "A linked list stores elements in nodes. Each node contains data and a link/reference to the next node.",
+    "bullets": [
+      "HEAD points to the first node.",
+      "Each node stores DATA and NEXT.",
+      "The last node points to NULL.",
+      "Nodes do not need to be contiguous in memory.",
+      "Insertion/deletion can be efficient when the required node/reference is known."
+    ],
+    "example": "HEAD → [10 | NEXT] → [20 | NEXT] → [30 | NULL]",
+    "visual": "HEAD\n ↓\n┌───────┐    ┌───────┐    ┌───────┐\n│10 | •─┼───►│20 | •─┼───►│30 |NULL│\n└───────┘    └───────┘    └───────┘",
+    "viva": "Linked list = nodes connected by links; traversal/search O(n)."
+  },
+  "Stack": {
+    "category": "DSA",
+    "title": "Stack",
+    "intro": "A stack is a linear data structure that follows LIFO: Last In, First Out.",
+    "bullets": [
+      "Push inserts an element at TOP.",
+      "Pop removes the element at TOP.",
+      "Peek reads TOP without removing it.",
+      "Display shows the current stack.",
+      "Stack can be implemented using an array or linked list."
+    ],
+    "example": "Push 10 → Push 20 → Push 30\n\nTOP → 30 → 20 → 10",
+    "visual": "       TOP\n        ↓\n     ┌─────┐\n     │ 30  │ ← push/pop here\n     ├─────┤\n     │ 20  │\n     ├─────┤\n     │ 10  │\n     └─────┘",
+    "viva": "Stack = LIFO. Push, Pop and Peek are typically O(1)."
+  },
+  "Queue": {
+    "category": "DSA",
+    "title": "Queue",
+    "intro": "A queue is a linear data structure that follows FIFO: First In, First Out.",
+    "bullets": [
+      "Enqueue inserts at REAR.",
+      "Dequeue removes from FRONT.",
+      "Front/Peek reads the first element.",
+      "Queues model waiting lines and scheduling systems.",
+      "A queue can be implemented using arrays or linked lists."
+    ],
+    "example": "ENQUEUE 10, 20, 30\n\nFRONT → 10 → 20 → 30 ← REAR",
+    "visual": "FRONT                          REAR\n  ↓                               ↓\n┌─────┬─────┬─────┐\n│ 10  │ 20  │ 30  │\n└─────┴─────┴─────┘\n  ↑ removed                 ↑ inserted",
+    "viva": "Queue = FIFO. With a suitable implementation enqueue/dequeue can be O(1)."
+  },
+  "Binary Tree / BST": {
+    "category": "DSA",
+    "title": "Binary Tree / Binary Search Tree",
+    "intro": "A binary tree is a tree in which each node has at most two children. A Binary Search Tree (BST) maintains an ordering rule.",
+    "bullets": [
+      "Each node can have a left and right child.",
+      "In a BST, smaller values go left and larger values go right.",
+      "Inorder traversal of a BST produces sorted order.",
+      "Common traversals are inorder, preorder and postorder."
+    ],
+    "example": "        50\n       /  \\\n     30    70\n    /  \\  /  \\\n   20 40 60 80",
+    "visual": "              50\n            /    \\\n          30      70\n         /  \\    /  \\\n       20   40  60   80",
+    "viva": "Balanced BST search/insert/delete is O(log n) average; worst case O(n)."
+  },
+  "Graph": {
+    "category": "DSA",
+    "title": "Graph",
+    "intro": "A graph is a non-linear data structure made of vertices (nodes) and edges (connections).",
+    "bullets": [
+      "Vertices represent entities or points.",
+      "Edges represent relationships/connections.",
+      "Graphs can be directed or undirected.",
+      "BFS explores level by level using a queue.",
+      "DFS explores deeply using recursion or a stack."
+    ],
+    "example": "A — B — D\n|   |\nC — E",
+    "visual": "      A ───── B ───── D\n      │       │\n      │       │\n      C ───── E",
+    "viva": "BFS/DFS are O(V + E) with an adjacency-list representation."
+  },
+  "Hashing": {
+    "category": "DSA",
+    "title": "Hashing",
+    "intro": "Hashing maps a key to a location in a hash table using a hash function.",
+    "bullets": [
+      "The hash function converts a key into an index/bucket.",
+      "A collision occurs when multiple keys map to the same bucket.",
+      "Chaining stores multiple entries in a bucket.",
+      "A good hash function distributes keys across the table."
+    ],
+    "example": "tableSize = 10\nindex = key % tableSize\n\n27 % 10 = 7",
+    "visual": "KEY 27\n  │\n  ▼\nhash: key % 10\n  │\n  ▼\nBUCKET 7 → [27]",
+    "viva": "Hashing average search/insert/delete O(1); worst case can be O(n)."
+  },
+  "Searching": {
+    "category": "DSA",
+    "title": "Searching",
+    "intro": "Searching is the process of finding whether a target value exists in a data structure and locating its position.",
+    "bullets": [
+      "Linear search checks elements one by one.",
+      "Binary search repeatedly divides a sorted range.",
+      "Binary search requires sorted data.",
+      "The DataVerse visualizer shows pointer/range decisions."
+    ],
+    "example": "Sorted: 10 20 30 40 50\nTarget: 40\n\nlow=0, high=4, mid=2 → 30\nTarget is larger → move low",
+    "visual": "LOW       MID        HIGH\n ↓          ↓           ↓\n10  20  30  40  50\n           │\n        compare",
+    "viva": "Linear search O(n); binary search O(log n) on sorted data."
+  },
+  "Sorting": {
+    "category": "DSA",
+    "title": "Sorting",
+    "intro": "Sorting rearranges elements into a chosen order, such as ascending or descending order.",
+    "bullets": [
+      "Bubble sort compares adjacent elements and swaps them when needed.",
+      "Selection sort repeatedly selects the minimum/maximum.",
+      "Insertion sort inserts each element into its correct earlier position.",
+      "Merge sort divides the data, sorts subarrays and merges them."
+    ],
+    "example": "Before: 5 2 4 1\nAfter:  1 2 4 5",
+    "visual": "5  2  4  1\n↓  compare / swap / shift\n1  2  4  5",
+    "viva": "Bubble/Selection/Insertion are typically O(n²); Merge sort O(n log n)."
+  }
+}
