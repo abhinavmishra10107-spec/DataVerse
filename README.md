@@ -1,36 +1,66 @@
-# DataVerse V3 — Complete Interactive DSA Visualizer
+# DataVerse — Interactive DSA Lab
 
-## Features
-- Array creation with a user-entered element count and dynamically generated input fields.
-- Array insertion, deletion, linear search and traversal with animated states.
-- Linked list creation showing DATA/NEXT fields, HEAD and NULL.
-- Linked list insertion, deletion, traversal and reverse.
-- Stack push/pop/peek/display with TOP visualization.
-- Queue enqueue/dequeue/front/display with FRONT and REAR visualization.
-- Binary Search Tree insertion, searching and inorder/preorder/postorder traversal.
-- Graph vertex/edge creation and BFS/DFS visualization.
-- Hashing insert/delete/search/display with bucket and collision-chain visualization.
-- Linear and binary search with comparison-by-comparison replay.
-- Bubble, selection and insertion sort with comparison/swap/shift replay and final sorted array.
-- Detailed execution log and time/space complexity.
-- Previous / Play / Next / speed / progress controls.
+DataVerse is an interactive learning platform for Data Structures, Algorithms, OOP and DSA concepts.
 
-## Run
+## V7 Interactive Upgrade
+
+- Step-by-step operation replay with Play / Pause / Previous / Next / speed controls.
+- Complexity Spotlight: Time Complexity and Auxiliary Space are highlighted after every operation, with the reason for the complexity.
+- More interactive visualizations with hover/click states and clearer pointer labels.
+- **Doubly Linked List** module with DATA, PREV and NEXT pointers, insertion, deletion, traversal and reverse.
+- Expanded **DS Concepts** area, including Doubly Linked List and interactive concept diagrams.
+- Detailed Notes & Revision content for OOP and DSA.
+- Module-specific inputs are isolated so values from one module are never reused by another.
+
+## Run locally
+
 ### Backend
-```bat
+
+```bash
 cd backend
 npm install
 npm start
 ```
-Backend: http://localhost:5000
+
+Backend runs on `http://localhost:5000`.
 
 ### Frontend
+
 In a second terminal:
-```bat
+
+```bash
 cd frontend
 npx serve .
 ```
-Open the URL printed by `serve`.
 
-If you already have the dependencies installed in the backend, do not run npm install again.
-Use Ctrl+F5 after replacing an older frontend so the browser loads the new app.js.
+Open `http://localhost:3000`.
+
+## Project structure
+
+```text
+dataverse-v3/
+├── backend/
+│   ├── package.json
+│   └── server.js
+├── frontend/
+│   ├── index.html
+│   ├── style.css
+│   ├── app.js
+│   ├── detailed-notes.json
+│   └── notes-data.js
+├── .gitignore
+└── README.md
+```
+
+## Team Git workflow
+
+Use feature branches for module work:
+
+```bash
+git checkout -b feature/doubly-linked-list
+git add .
+git commit -m "Add doubly linked list visualization"
+git push -u origin feature/doubly-linked-list
+```
+
+Then open a Pull Request into `main`.

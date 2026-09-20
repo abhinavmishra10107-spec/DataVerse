@@ -5,7 +5,7 @@ const PORT = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json());
 
-let A = [], L = [], S = [], Q = [], T = null;
+let A = [], L = [], DL = [], S = [], Q = [], T = null;
 let G = { nodes: [], edges: [] };
 let H = Array.from({ length: 10 }, () => []);
 
@@ -13,7 +13,7 @@ const C = (time, space, note) => ({ time, space, note });
 const validNum = x => Number.isFinite(Number(x));
 const response = (res, operation, payload = {}) => res.json({ operation, ...payload });
 
-app.get('/api/health', (req, res) => res.json({ status: 'ok', service: 'DataVerse API', modules: 'array,linked-list,stack,queue,tree,graph,hashing,searching,sorting' }));
+app.get('/api/health', (req, res) => res.json({ status: 'ok', service: 'DataVerse API', modules: 'array,linked-list,doubly-linked-list,stack,queue,tree,graph,hashing,searching,sorting' }));
 
 // ---------------- ARRAY ----------------
 app.post('/api/array/create', (req, res) => {
@@ -209,8 +209,107 @@ function selectionSort(input){let a=input.slice(),steps=[`Start with the unsorte
 function insertionSort(input){let a=input.slice(),steps=[`Start with the unsorted array: [${a.join(', ')}].`,`Treat the first element at index 0 as a sorted section.`];for(let i=1;i<a.length;i++){const key=a[i];let j=i-1;steps.push(`Take ${key} as the KEY at index ${i}.`);while(j>=0&&a[j]>key){steps.push(`${a[j]} is greater than KEY ${key}, so shift ${a[j]} from index ${j} to index ${j+1}.`);a[j+1]=a[j];j--;}a[j+1]=key;steps.push(`Insert KEY ${key} at index ${j+1}. Sorted section is now [${a.slice(0,i+1).join(', ')}].`);steps.push(`Current full array: [${a.join(', ')}].`);}steps.push(`Final sorted array: [${a.join(', ')}].`);return [a,steps];}
 for(const type of ['bubble','selection','insertion'])app.post('/api/sorting/'+type,(req,res)=>{const input=(req.body.values||[]).map(Number);if(!input.length||input.some(Number.isNaN))return res.status(400).json({error:'Enter a numeric array.'});let out,steps;if(type==='bubble')[out,steps]=bubbleSort(input);else if(type==='selection')[out,steps]=selectionSort(input);else [out,steps]=insertionSort(input);response(res,type[0].toUpperCase()+type.slice(1)+' Sort',{array:out,steps,complexity:C('O(n²)','O(1) auxiliary','Comparison-based in-place sorting.'),message:`Sorting completed. Final array: [${out.join(', ')}].`,meta:{before:input}});});
 
+
+// ---------------- DOUBLY LINKED LIST ----------------
+app.post('/api/doubly-linked-list/create', (req, res) => {
+  const values = Array.isArray(req.body.values) ? req.body.values.map(Number) : [];
+  if (!values.length || values.some(Number.isNaN)) return res.status(400).json({ error: 'Enter numeric values for the doubly linked list.' });
+  DL = values;
+  const steps = [
+    `Create ${DL.length} nodes. Each node has DATA, PREV and NEXT fields.`,
+    `HEAD points to node 0 and node 0 PREV is NULL.`
+  ];
+  DL.forEach((v, i) => {
+    if (i === 0) steps.push(`Node 0 stores DATA = ${v}. PREV = NULL and NEXT points to node 1.`);
+    else if (i === DL.length - 1) steps.push(`Node ${i} stores DATA = ${v}. PREV points to node ${i - 1} and NEXT = NULL.`);
+    else steps.push(`Node ${i} stores DATA = ${v}. PREV → node ${i - 1}; NEXT → node ${i + 1}.`);
+  });
+  steps.push(`Forward traversal: ${DL.join(' → ')} → NULL.`);
+  steps.push(`Backward traversal: NULL ← ${DL.slice().reverse().join(' ← ')}.`);
+  response(res, 'Create Doubly Linked List', {
+    array: DL,
+    steps,
+    complexity: C('O(n)', 'O(n)', 'Creating n nodes requires visiting/storing n values.'),
+    message: `${DL.length} doubly linked-list nodes created.`,
+    highlight: DL.map((_, i) => i)
+  });
+});
+
+app.post('/api/doubly-linked-list/insert', (req, res) => {
+  const p = Number(req.body.position), v = Number(req.body.value);
+  if (!Number.isInteger(p) || p < 0 || p > DL.length) return res.status(400).json({ error: 'Invalid doubly linked-list position.' });
+  const before = DL.slice();
+  const steps = [`Start from HEAD and follow NEXT pointers until position ${p}.`];
+  if (p === 0) {
+    steps.push(`Create a new node containing ${v}. Its PREV becomes NULL.`);
+    steps.push(`Set its NEXT to the old HEAD and update the old HEAD PREV to the new node.`);
+  } else {
+    for (let i = 0; i < p; i++) steps.push(`Visit node ${i}, DATA = ${DL[i]}. Follow NEXT to the next node.`);
+    steps.push(`Create a new node containing ${v}.`);
+    steps.push(`Set new PREV → node ${p - 1} and new NEXT → node ${p < DL.length ? p : 'NULL'}.`);
+    steps.push(`Update the predecessor's NEXT and successor's PREV links.`);
+  }
+  DL.splice(p, 0, v);
+  steps.push(`Result: ${DL.join(' ⇄ ')}.`);
+  response(res, 'Doubly Linked List Insertion', {
+    array: DL, steps,
+    complexity: C(p === 0 ? 'O(1)' : 'O(n)', 'O(1) auxiliary', 'Finding a general position requires traversal; relinking known neighboring nodes is constant time.'),
+    message: `Inserted ${v} at position ${p}.`,
+    highlight: [p],
+    meta: { position: p, value: v, before }
+  });
+});
+
+app.post('/api/doubly-linked-list/delete', (req, res) => {
+  const p = Number(req.body.position);
+  if (!Number.isInteger(p) || p < 0 || p >= DL.length) return res.status(400).json({ error: 'Invalid doubly linked-list position.' });
+  const before = DL.slice(), x = DL[p];
+  const steps = [`Traverse to node ${p}, where DATA = ${x}.`];
+  if (p > 0) steps.push(`Use PREV to reach node ${p - 1} and redirect its NEXT pointer.`);
+  if (p < DL.length - 1) steps.push(`Use NEXT to reach node ${p + 1} and redirect its PREV pointer.`);
+  if (p === 0) steps.push(`Move HEAD to the next node and set the new HEAD PREV to NULL.`);
+  if (p === DL.length - 1) steps.push(`The predecessor becomes the new tail and its NEXT becomes NULL.`);
+  DL.splice(p, 1);
+  steps.push(`Remove node ${x}. Result: ${DL.length ? DL.join(' ⇄ ') : 'empty'}.`);
+  response(res, 'Doubly Linked List Deletion', {
+    array: DL, steps,
+    complexity: C(p === 0 ? 'O(1)' : 'O(n)', 'O(1) auxiliary', 'Traversal to an arbitrary position costs O(n); pointer relinking itself is O(1).'),
+    message: `Deleted ${x}.`,
+    highlight: [],
+    meta: { position: p, value: x, before }
+  });
+});
+
+app.post('/api/doubly-linked-list/traverse', (req, res) => {
+  const steps = [`Start at HEAD and follow NEXT pointers forward.`];
+  DL.forEach((v, i) => steps.push(`Visit node ${i}: DATA = ${v}. NEXT ${i < DL.length - 1 ? 'moves to node ' + (i + 1) : 'is NULL, so forward traversal ends'}.`));
+  steps.push(`Now use PREV from the last node to traverse backward.`);
+  response(res, 'Doubly Linked List Traversal', {
+    array: DL, steps,
+    complexity: C('O(n)', 'O(1)', 'Every node is visited during traversal.'),
+    message: 'Forward and backward traversal completed.',
+    highlight: DL.map((_, i) => i)
+  });
+});
+
+app.post('/api/doubly-linked-list/reverse', (req, res) => {
+  DL.reverse();
+  const steps = [
+    `Reverse the logical order by swapping the direction of traversal.`,
+    `The new HEAD is the previous tail.`,
+    `Forward order is now: ${DL.join(' → ')} → NULL.`,
+    `Following PREV from the tail gives: ${DL.slice().reverse().join(' ← ')}.`
+  ];
+  response(res, 'Doubly Linked List Reverse', {
+    array: DL, steps,
+    complexity: C('O(n)', 'O(1)', 'The list order is reversed by visiting n elements.'),
+    message: 'Doubly linked list reversed.',
+    highlight: DL.map((_, i) => i)
+  });
+});
+
 // ---------------- RESET ----------------
-function reset(m){if(m==='array')A=[];if(m==='linked-list')L=[];if(m==='stack')S=[];if(m==='queue')Q=[];if(m==='tree'){T=null;Node.next=1;}if(m==='graph')G={nodes:[],edges:[]};if(m==='hashing')H=Array.from({length:10},()=>[]);}
-for(const m of ['array','linked-list','stack','queue','tree','graph','hashing','searching','sorting'])app.post('/api/'+m+'/reset',(req,res)=>{reset(m);if(m==='array'||m==='linked-list'||m==='stack'||m==='queue'||m==='searching'||m==='sorting')return res.json({array:[]});if(m==='tree')return res.json({nodes:[]});if(m==='graph')return res.json({graph:G});return res.json({buckets:H});});
+function reset(m){if(m==='array')A=[];if(m==='linked-list')L=[];if(m==='doubly-linked-list')DL=[];if(m==='stack')S=[];if(m==='queue')Q=[];if(m==='tree'){T=null;Node.next=1;}if(m==='graph')G={nodes:[],edges:[]};if(m==='hashing')H=Array.from({length:10},()=>[]);}
+for(const m of ['array','linked-list','doubly-linked-list','stack','queue','tree','graph','hashing','searching','sorting'])app.post('/api/'+m+'/reset',(req,res)=>{reset(m);if(m==='array'||m==='linked-list'||m==='doubly-linked-list'||m==='stack'||m==='queue'||m==='searching'||m==='sorting')return res.json({array:[]});if(m==='tree')return res.json({nodes:[]});if(m==='graph')return res.json({graph:G});return res.json({buckets:H});});
 
 app.listen(PORT,()=>console.log(`DataVerse API running on http://localhost:${PORT}`));
