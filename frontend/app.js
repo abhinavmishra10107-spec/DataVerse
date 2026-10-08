@@ -32,9 +32,230 @@ function frame(caption,st,extra={}){return{caption,state:JSON.parse(JSON.stringi
 function stop(){if(anim.timer)clearInterval(anim.timer);anim.timer=null;anim.playing=false;$('play').textContent='▶ Play'}
 function setup(frames){stop();anim.frames=frames||[];anim.i=0;if(!anim.frames.length){$('animationPanel').classList.add('hidden');return}$('animationPanel').classList.remove('hidden');$('progress').max=Math.max(0,anim.frames.length-1);renderFrame()}
 function renderFrame(){if(!anim.frames.length)return;const f=anim.frames[anim.i];$('animationCounter').textContent=`${anim.i+1} / ${anim.frames.length}`;$('animationCaption').textContent=f.caption;$('progress').value=anim.i;visual(f)}
-function visual(f){const s=f.state||{},hl=f.highlight||[],p=f.pointer??-1,label=f.pointerLabel||'';if(['array','searching','sorting'].includes(moduleName))arrayVis(s.array||[],hl,p,label);else if(moduleName==='linked-list')listVis(s.array||[],hl,label,f.pointerIndex??-1);else if(moduleName==='doubly-linked-list')dlistVis(s.array||[],hl,label,f.pointerIndex??-1);else if(moduleName==='stack')stackVis(s.array||[],typeof f.highlight==='number'?f.highlight:(hl[0]??-1),label);else if(moduleName==='queue')queueVis(s.array||[],typeof f.highlight==='number'?f.highlight:(hl[0]??-1),label);else if(moduleName==='tree')treeVis(s.nodes||[],hl,label);else if(moduleName==='graph')graphVis(s.graph||{nodes:[],edges:[]},hl,label);else if(moduleName==='hashing')hashVis(s.buckets||Array.from({length:10},()=>[]),typeof f.highlight==='number'?f.highlight:(hl[0]??-1),label);else if(moduleName==='notes')renderNotes();}
+function visual(f){const s=f.state||{},hl=f.highlight||[],p=f.pointer??-1,label=f.pointerLabel||'';if(['array','searching','sorting'].includes(moduleName))arrayVis(s.array||[],hl,p,label);else if(moduleName==='linked-list'){
+    if(f.listMeta){
+        linkedAnimationVis(s.array||[], {
+    ...f.listMeta,
+    newNode: f.newNode,
+    newNodeId: f.newNodeId,
+    newNextId: f.newNextId
+});
+    }else{
+        listVis(s.array||[],hl,label,f.pointerIndex??-1);
+    }
+} else if(moduleName==='doubly-linked-list')dlistVis(s.array||[],hl,label,f.pointerIndex??-1);else if(moduleName==='stack')stackVis(s.array||[],typeof f.highlight==='number'?f.highlight:(hl[0]??-1),label);else if(moduleName==='queue')queueVis(s.array||[],typeof f.highlight==='number'?f.highlight:(hl[0]??-1),label);else if(moduleName==='tree')treeVis(s.nodes||[],hl,label);else if(moduleName==='graph')graphVis(s.graph||{nodes:[],edges:[]},hl,label);else if(moduleName==='hashing')hashVis(s.buckets||Array.from({length:10},()=>[]),typeof f.highlight==='number'?f.highlight:(hl[0]??-1),label);else if(moduleName==='notes')renderNotes();}
 function arrayVis(a,hl=[],p=-1,label=''){count(a.filter(x=>x!==null&&x!==undefined&&x!=='').length);if(!a.length){$('visualArea').innerHTML='<div class="empty"><div class="big">▦</div>No elements yet. Use the controls to create data.</div>';return}$('visualArea').innerHTML=`<div class="array-stage">${label?`<div class="pointer-label">▼ ${esc(label)}</div>`:''}<div class="array-row">${a.map((v,i)=>`<div class="array-item ${hl.includes(i)?'hl':''} ${p===i?'pointer-target':''}" data-inspect-index="${i}" tabindex="0" title="Click index ${i} to inspect"><div class="array-box ${v===null||v===''?'slot-empty':''}">${v===null||v===''?'':esc(v)}</div><div class="idx">index ${i}</div></div>`).join('')}</div></div>`}
-function listVis(a,hl=[],label='',pi=-1){count(a.length);if(!a.length){$('visualArea').innerHTML='<div class="empty"><div class="big">↪</div>No nodes yet. Create the linked list first.</div>';return}$('visualArea').innerHTML=`<div class="linked-stage">${label?`<div class="pointer-label">${esc(label)}</div>`:''}<div class="linked-row">${a.map((v,i)=>`<div class="link-unit ${hl.includes(i)||pi===i?'hl':''}" data-inspect-index="${i}" tabindex="0" title="Click node ${i} to inspect"><div class="node-wrap"><div class="head-label">${i===0?'HEAD ↓':''}</div><div class="node-card"><div><b>DATA</b><strong>${esc(v)}</strong></div><div class="next-cell"><b>NEXT</b><strong>${i<a.length-1?`→ node ${i+1}`:'NULL'}</strong></div></div><div class="idx">node ${i}</div></div>${i<a.length-1?'<span class="arrow">→</span>':''}</div>`).join('')}</div><div class="pointer-legend">Each NEXT pointer stores the address/reference of the next node. The last NEXT is NULL.</div></div>`}
+function listVis(a,hl=[],label='',pi=-1,nodeIds=null){
+    count(a.length);
+
+    if(!a.length){
+        $('visualArea').innerHTML=
+            '<div class="empty"><div class="big">↪</div>No nodes yet. Create the linked list first.</div>';
+        return;
+    }
+
+    const ids = nodeIds || a.map((_,i)=>i);
+
+    $('visualArea').innerHTML=`
+        <div class="linked-stage">
+
+            ${label
+                ? `<div class="pointer-label">${esc(label)}</div>`
+                : ''}
+
+            <div class="linked-row">
+
+                ${a.map((v,i)=>`
+                    <div class="link-unit ${hl.includes(i)||pi===i?'hl':''}"
+                         data-inspect-index="${i}"
+                         tabindex="0"
+                         title="Click node ${ids[i]} to inspect">
+
+                        <div class="node-wrap">
+
+                            <div class="head-label">
+                                ${i===0 ? 'HEAD ↓' : ''}
+                            </div>
+
+                            <div class="node-card">
+
+                                <div>
+                                    <b>DATA</b>
+                                    <strong>${esc(v)}</strong>
+                                </div>
+
+                                <div class="next-cell">
+                                    <b>NEXT</b>
+                                    <strong>
+                                        ${i<a.length-1
+                                            ? `→ Node ${ids[i+1]}`
+                                            : 'NULL'}
+                                    </strong>
+                                </div>
+
+                            </div>
+
+                            <div class="idx">
+                                Node ${ids[i]}
+                            </div>
+
+                        </div>
+
+                        ${i<a.length-1
+                            ? '<span class="arrow">→</span>'
+                            : ''}
+
+                    </div>
+                `).join('')}
+
+            </div>
+
+            <div class="pointer-legend">
+                Each NEXT pointer stores the reference to the next node.
+                The last NEXT is NULL.
+            </div>
+
+        </div>
+    `;
+}function linkedAnimationVis(a, meta={}){
+
+    count(a.length);
+
+    const ids = meta.nodeIds || a.map((_,i)=>i);
+
+    let html = `
+        <div class="linked-stage">
+            ${meta.title
+                ? `<div class="pointer-label">${esc(meta.title)}</div>`
+                : ''}
+
+            <div class="linked-row">
+    `;
+
+    a.forEach((v,i)=>{
+
+        const nodeId = ids[i];
+
+        const isCurrent = meta.currentId === nodeId;
+        const isPrevious = meta.previousId === nodeId;
+        const isNext = meta.nextId === nodeId;
+        const isTarget = meta.targetId === nodeId;
+        const isHead = meta.headId === nodeId;
+
+        let classes = 'link-unit';
+
+        if(isCurrent) classes += ' pointer-current';
+        if(isPrevious) classes += ' pointer-previous';
+        if(isNext) classes += ' pointer-next';
+        if(isTarget) classes += ' pointer-target';
+
+        html += `
+            <div class="${classes}">
+
+                <div class="node-wrap">
+
+                    <div class="head-label">
+                        ${isHead ? 'HEAD ↓' : ''}
+                    </div>
+
+                    <div class="animation-pointer-labels">
+
+                        ${isPrevious
+                            ? '<span class="pointer-tag">PREVIOUS</span>'
+                            : ''}
+
+                        ${isCurrent
+                            ? '<span class="pointer-tag">CURRENT</span>'
+                            : ''}
+
+                        ${isNext
+                            ? '<span class="pointer-tag">NEXT</span>'
+                            : ''}
+
+                        ${isTarget
+                            ? '<span class="pointer-tag">TARGET</span>'
+                            : ''}
+
+                    </div>
+
+                    <div class="node-card">
+
+                        <div>
+                            <b>DATA</b>
+                            <strong>${esc(v)}</strong>
+                        </div>
+
+                        <div class="next-cell">
+                            <b>NEXT</b>
+                            <strong>
+                                ${i<a.length-1
+                                    ? `→ Node ${ids[i+1]}`
+                                    : 'NULL'}
+                            </strong>
+                        </div>
+
+                    </div>
+
+                    <div class="idx">
+                        Node ${nodeId}
+                    </div>
+
+                </div>
+
+                ${i<a.length-1
+                    ? '<span class="arrow">→</span>'
+                    : ''}
+            </div>
+        `;
+    });
+
+    html += `
+            </div>
+
+            ${meta.caption
+                ? `<div class="pointer-legend">${esc(meta.caption)}</div>`
+                : ''}
+        </div>
+    `;
+
+    // Temporary newly-created node
+    if(meta.newNode !== undefined){
+
+        html += `
+            <div class="new-node-area">
+
+                <div class="new-node-title">
+                    NEW NODE
+                </div>
+
+                <div class="new-node-card">
+
+                    <div>
+                        <b>DATA</b>
+                        <strong>${esc(meta.newNode)}</strong>
+                    </div>
+
+                    <div>
+                        <b>NEXT</b>
+                        <strong>
+                            ${meta.newNextId !== undefined
+                                ? `→ Node ${meta.newNextId}`
+                                : '?'}
+                        </strong>
+                    </div>
+
+                </div>
+
+                <div class="new-node-id">
+                    Node ${meta.newNodeId}
+                </div>
+
+            </div>
+        `;
+    }
+
+    $('visualArea').innerHTML = html;
+}
 function dlistVis(a,hl=[],label='',pi=-1){
   count(a.length);
   if(!a.length){$('visualArea').innerHTML='<div class="empty"><div class="big">↔</div><b>Doubly linked list is empty.</b><div style="margin-top:6px">Create nodes to see PREV and NEXT pointers.</div></div>';return}
@@ -242,9 +463,849 @@ else if(op==='deletion'){const p=Number(raw.index);fs.push(frame(`Select ${a[p]}
 else if(op.includes('linear search')){for(let i=0;i<a.length;i++){fs.push(frame(`Compare target ${raw.value} with value ${a[i]} at index ${i}.`,{array:a},{highlight:[i],pointer:i,pointerLabel:`CHECK index ${i}`}));if(a[i]===Number(raw.value)){fs.push(frame(`Match found: ${raw.value} is stored at index ${i}. Stop.`,{array:a},{highlight:[i],pointer:i,pointerLabel:'FOUND'}));break}}if(!a.includes(Number(raw.value)))fs.push(frame(`All indices were checked. ${raw.value} is not present.`,{array:a},{pointerLabel:'NOT FOUND'}));}
 else if(op.includes('binary search')){const x=a.slice().sort((x,y)=>x-y);let l=0,h=x.length-1;fs.push(frame(`Binary search uses sorted data: [${x.join(', ')}]. LEFT = 0 and RIGHT = ${h}.`,{array:x},{pointerLabel:'SEARCH RANGE'}));while(l<=h){const m=Math.floor((l+h)/2);fs.push(frame(`Calculate MID = floor((${l}+${h})/2) = ${m}. Compare ${x[m]} with target ${raw.value}.`,{array:x},{highlight:[m],pointer:m,pointerLabel:`MID = ${m}`}));if(x[m]===Number(raw.value)){fs.push(frame(`The middle value matches ${raw.value}. Search succeeds.`,{array:x},{highlight:[m],pointer:m,pointerLabel:'FOUND'}));break}if(x[m]<Number(raw.value))l=m+1;else h=m-1}if(!x.includes(Number(raw.value)))fs.push(frame(`No search range remains. Target is not found.`,{array:x},{pointerLabel:'NOT FOUND'}));}
 else if(op.includes('sort')){let s=a.slice();if(op.includes('bubble')){for(let p=0;p<s.length-1;p++)for(let j=0;j<s.length-p-1;j++){fs.push(frame(`Pass ${p+1}: compare adjacent values ${s[j]} and ${s[j+1]}.`,{array:s},{highlight:[j,j+1],pointer:j,pointerLabel:'COMPARE'}));if(s[j]>s[j+1]){[s[j],s[j+1]]=[s[j+1],s[j]];fs.push(frame(`They are out of order, so swap them.`,{array:s},{highlight:[j,j+1],pointer:j,pointerLabel:'SWAP'}));}}}else if(op.includes('selection')){for(let i=0;i<s.length-1;i++){let m=i;fs.push(frame(`Start position ${i}. Assume ${s[i]} is the smallest remaining value.`,{array:s},{highlight:[i],pointer:i,pointerLabel:'CURRENT MINIMUM'}));for(let j=i+1;j<s.length;j++){fs.push(frame(`Compare candidate ${s[j]} at index ${j} with current minimum ${s[m]}.`,{array:s},{highlight:[m,j],pointer:j,pointerLabel:'COMPARE'}));if(s[j]<s[m])m=j}if(m!==i){[s[i],s[m]]=[s[m],s[i]];fs.push(frame(`Place the smallest value ${s[i]} into sorted position ${i}.`,{array:s},{highlight:[i],pointer:i,pointerLabel:'PLACE MINIMUM'}));}}}else{for(let i=1;i<s.length;i++){const key=s[i];let j=i-1;fs.push(frame(`Take ${key} as the KEY. The left portion is already sorted.`,{array:s},{highlight:[i],pointer:i,pointerLabel:`KEY = ${key}`}));while(j>=0&&s[j]>key){s[j+1]=s[j];fs.push(frame(`Shift ${s[j]} one position right because it is greater than KEY ${key}.`,{array:s},{highlight:[j,j+1],pointer:j,pointerLabel:'SHIFT'}));j--}s[j+1]=key;fs.push(frame(`Insert KEY ${key} at index ${j+1}.`,{array:s},{highlight:[j+1],pointer:j+1,pointerLabel:'INSERT KEY'}));}}fs.push(frame(`Sorting is complete. FINAL ARRAY = [${f.join(', ')}].`,{array:f},{pointerLabel:'FINAL SORTED ARRAY'}));}return fs}
-function genericFrames(module,d,before,after,raw){if(['array','searching','sorting'].includes(moduleName))return arrayFrames(d,before,after,raw);const fs=[],a=module==='linked-list'?(after.linked||before.linked||[]):module==='doubly-linked-list'?(after.dlinked||before.dlinked||[]):(after.array||before.array||[]);if(moduleName==='linked-list'){if(d.operation==='Create Linked List'){fs.push(frame('HEAD points to node 0. The node stores DATA = '+a[0]+' and its NEXT points to node 1.',{array:a},{pointerIndex:0,pointerLabel:'HEAD → node 0'}));a.forEach((v,i)=>fs.push(frame(i<a.length-1?`Node ${i}: DATA = ${v}. NEXT points to node ${i+1}, where DATA = ${a[i+1]} is stored.`:`Node ${i}: DATA = ${v}. NEXT = NULL because this is the last node.`,{array:a},{highlight:[i],pointerIndex:i,pointerLabel:`NODE ${i}`})));fs.push(frame(`Following HEAD → NEXT repeatedly gives ${a.join(' → ')} → NULL.`,{array:a},{pointerLabel:'LIST COMPLETE'}));}else a.forEach((v,i)=>fs.push(frame(`Current pointer is at node ${i}. DATA = ${v}. Follow NEXT to the next node.`,{array:a},{highlight:[i],pointerIndex:i,pointerLabel:`NODE ${i}`})));if(!fs.length)fs.push(frame(d.message,{array:a}));return fs}if(moduleName==='doubly-linked-list'){if(d.operation==='Create Doubly Linked List'){fs.push(frame('HEAD points to node 0. PREV = NULL and NEXT points forward to node 1.',{array:a},{pointerIndex:0,pointerLabel:'HEAD → node 0'}));a.forEach((v,i)=>fs.push(frame(i===0?`Node 0: DATA = ${v}. PREV = NULL. NEXT points to node 1.`:i===a.length-1?`Node ${i}: DATA = ${v}. PREV points to node ${i-1}. NEXT = NULL.`:`Node ${i}: DATA = ${v}. PREV → node ${i-1}, NEXT → node ${i+1}.`,{array:a},{highlight:[i],pointerIndex:i,pointerLabel:`NODE ${i}`})));fs.push(frame(`The list can be traversed forward ${a.join(' → ')} and backward ${a.slice().reverse().join(' → ')}.`,{array:a},{pointerLabel:'TWO-WAY TRAVERSAL'}));}else a.forEach((v,i)=>fs.push(frame(`Node ${i}: DATA = ${v}. PREV ${i?'→ node '+(i-1):'= NULL'}; NEXT ${i<a.length-1?'→ node '+(i+1):'= NULL'}.`,{array:a},{highlight:[i],pointerIndex:i,pointerLabel:`NODE ${i}`})));if(!fs.length)fs.push(frame(d.message,{array:a}));return fs}if(moduleName==='stack'){const b=before.array||before.stack||[];const f=after.array||after.stack||[];const action=(d.operation||'').toLowerCase();if(action.includes('push')){const v=f[f.length-1];fs.push(frame(`Before PUSH, the stack is [${b.join(', ')}]. TOP is ${b.length?b[b.length-1]:'empty'}.`,{array:b},{pointerLabel:'BEFORE PUSH'}));fs.push(frame(`Create a new element containing ${v} and place it above the current TOP.`,{array:b.concat([v])},{highlight:[f.length-1],pointerLabel:'NEW ELEMENT'}));fs.push(frame(`Update TOP to point to ${v}. The resultant stack is [${f.join(', ')}].`,{array:f},{highlight:[f.length-1],pointerLabel:'TOP → '+v}));}else if(action.includes('pop')){const removed=b[b.length-1];fs.push(frame(`Before POP, TOP points to ${removed}.`,{array:b},{highlight:[b.length-1],pointerLabel:'TOP → '+removed}));fs.push(frame(`Remove the element ${removed} from TOP.`,{array:b.slice(0,-1)},{pointerLabel:'REMOVE TOP'}));fs.push(frame(`Move TOP to ${f.length?f[f.length-1]:'empty'}. Resultant stack: [${f.join(', ')}].`,{array:f},{highlight:f.length?[f.length-1]:[],pointerLabel:f.length?'TOP → '+f[f.length-1]:'STACK EMPTY'}));}else if(action.includes('peek')){fs.push(frame(`PEEK reads the current TOP without removing anything.`,{array:f},{highlight:[f.length-1],pointerLabel:'PEEK'}));fs.push(frame(`TOP = ${f[f.length-1]}. The stack remains unchanged: [${f.join(', ')}].`,{array:f},{highlight:[f.length-1],pointerLabel:'TOP → '+f[f.length-1]}));}else{fs.push(frame(`Display reads the stack from BOTTOM to TOP.`,{array:f},{pointerLabel:'DISPLAY'}));f.forEach((v,i)=>fs.push(frame(`Position ${i} contains ${v}${i===f.length-1?' and TOP points here.':'.'}`,{array:f},{highlight:[i],pointerLabel:i===f.length-1?'TOP':'POSITION '+i})));}if(!fs.length)fs.push(frame(d.message,{array:f}));return fs}if(moduleName==='queue'){a.forEach((v,i)=>fs.push(frame(`Queue position ${i} stores ${v}. ${i===0?'FRONT points here.':i===a.length-1?'REAR points here.':''}`,{array:a},{highlight:[i],pointerLabel:i===0?'FRONT':i===a.length-1?'REAR':'QUEUE'})));if(!fs.length)fs.push(frame(d.message,{array:a}));return fs}if(moduleName==='tree'){const n=after.nodes||[];(d.steps||[]).forEach((s,i)=>fs.push(frame(s,{nodes:n},{highlight:[],pointerLabel:`TREE STEP ${i+1}`})));fs.push(frame(d.message,{nodes:n},{highlight:d.highlight||[],pointerLabel:'FINAL TREE'}));return fs}if(moduleName==='graph'){(d.steps||[]).forEach((s,i)=>fs.push(frame(s,{graph:after.graph},{highlight:(d.highlight||[]).slice(0,Math.max(1,i+1)),pointerLabel:`GRAPH STEP ${i+1}`})));return fs}if(moduleName==='hashing'){const b=after.buckets||state.hash;for(let i=0;i<10;i++)fs.push(frame(`Inspect bucket ${i}. ${b[i].length?`It contains ${b[i].join(' → ')}.`:'It is empty.'}`,{buckets:b},{highlight:i,pointerLabel:`BUCKET ${i}`}));return fs}return [frame(d.message,after)]}
+function genericFrames(module,d,before,after,raw){
+
+    if(['array','searching','sorting'].includes(module))
+        return arrayFrames(d,before,after,raw);
+
+    const fs=[];
+
+    const a =
+        module === 'linked-list'
+            ? (after.linked || before.linked || [])
+            : module === 'doubly-linked-list'
+                ? (after.dlinked || before.dlinked || [])
+                : (after.array || before.array || []);if(module === 'linked-list'){
+
+    const beforeList =
+        before.linked || before.array || [];
+
+    const afterList =
+        after.linked || after.array || [];
+
+    /*
+     * CREATE
+     */
+    if(d.operation === 'Create Linked List'){
+
+        const ids = afterList.map((_,i)=>i);
+
+        fs.push(
+            frame(
+                'HEAD points to the first node.',
+                {array:afterList},
+                {
+                    pointerIndex:0,
+                    pointerLabel:'HEAD → Node 0',
+                    listMeta:{
+                        title:'HEAD → Node 0',
+                        nodeIds:ids,
+                        headId:ids[0],
+                        currentId:ids[0],
+                        caption:'HEAD stores the reference to the first node.'
+                    }
+                }
+            )
+        );
+
+        afterList.forEach((v,i)=>{
+
+            fs.push(
+                frame(
+                    i < afterList.length-1
+                        ? `Node ${i} contains ${v}. Its NEXT points to Node ${i+1}.`
+                        : `Node ${i} contains ${v}. Its NEXT is NULL.`,
+
+                    {array:afterList},
+
+                    {
+                        pointerIndex:i,
+                        pointerLabel:`CURRENT → Node ${i}`,
+
+                        listMeta:{
+                            title:`CURRENT → Node ${i}`,
+                            nodeIds:ids,
+                            headId:ids[0],
+                            currentId:ids[i],
+                            nextId:
+                                i < ids.length-1
+                                    ? ids[i+1]
+                                    : undefined,
+                            caption:
+                                i < ids.length-1
+                                    ? `Follow NEXT from Node ${i} to Node ${i+1}.`
+                                    : 'NEXT is NULL, so this is the last node.'
+                        }
+                    }
+                )
+            );
+
+        });
+
+        fs.push(
+            frame(
+                `Following HEAD → NEXT gives ${afterList.join(' → ')} → NULL.`,
+
+                {array:afterList},
+
+                {
+                    pointerLabel:'LIST COMPLETE',
+
+                    listMeta:{
+                        title:'LIST COMPLETE',
+                        nodeIds:ids,
+                        headId:ids[0],
+                        caption:
+                            `Linked list: ${afterList.join(' → ')} → NULL`
+                    }
+                }
+            )
+        );
+
+        return fs;
+    }
+
+
+    /*
+     * INSERT
+     */
+    if(d.operation === 'Linked List Insertion'){
+
+        const meta = d.meta || {};
+
+        const position = meta.position;
+        const value = meta.value;
+
+        const oldIds =
+            beforeList.map((_,i)=>i);
+
+        const newNodeId =
+            beforeList.length;
+
+        const newIds =
+            oldIds.slice();
+
+        newIds.splice(position,0,newNodeId);
+
+
+        /*
+         * FRAME 1 — OLD LIST
+         */
+        fs.push(
+            frame(
+                `Start at HEAD. We need to insert ${value} at position ${position}.`,
+
+                {array:beforeList},
+
+                {
+                    listMeta:{
+                        title:'BEFORE INSERTION',
+                        nodeIds:oldIds,
+                        headId:oldIds[0],
+                        caption:
+                            `Current list: ${beforeList.join(' → ')} → NULL`
+                    }
+                }
+            )
+        );
+
+
+        /*
+         * FRAME 2+ — TRAVERSAL
+         */
+        if(position > 0){
+
+            for(let i=0;i<position;i++){
+
+                fs.push(
+                    frame(
+                        `CURRENT is at Node ${i}. Follow NEXT to reach the insertion position.`,
+
+                        {array:beforeList},
+
+                        {
+                            listMeta:{
+                                title:`TRAVERSING → Node ${i}`,
+                                nodeIds:oldIds,
+                                headId:oldIds[0],
+                                currentId:oldIds[i],
+                                nextId:
+                                    i < oldIds.length-1
+                                        ? oldIds[i+1]
+                                        : undefined,
+                                caption:
+                                    `CURRENT → Node ${i}`
+                            }
+                        }
+                    )
+                );
+
+            }
+        }
+
+
+        /*
+         * FRAME — CREATE NEW NODE
+         */
+        fs.push(
+            frame(
+                `Create a new node containing ${value}.`,
+
+                {array:beforeList},
+
+                {
+                    listMeta:{
+                        title:'CREATE NEW NODE',
+                        nodeIds:oldIds,
+                        headId:oldIds[0],
+                        currentId:
+                            position > 0
+                                ? oldIds[position-1]
+                                : undefined,
+                        caption:
+                            `New node will be Node ${newNodeId}.`
+                    }
+                }
+            )
+        );
+
+
+        /*
+         * FRAME — SHOW DETACHED NODE
+         */
+        fs.push(
+    frame(
+        `Node ${newNodeId} has been created but is not connected yet.`,
+
+        {array:beforeList},
+
+        {
+            listMeta:{
+                title:'NEW NODE CREATED',
+                nodeIds:oldIds,
+                headId:oldIds[0],
+                currentId:
+                    position > 0
+                        ? oldIds[position-1]
+                        : undefined,
+                caption:
+                    `Node ${newNodeId} is currently detached.`
+            },
+
+            newNode:value,
+            newNodeId:newNodeId
+        }
+    )
+);
+
+
+        /*
+         * POSITION 0
+         */
+        if(position === 0){
+
+            fs.push(
+                frame(
+                    `Set Node ${newNodeId}'s NEXT to the old HEAD, Node ${oldIds[0]}.`,
+
+                    {array:beforeList},
+
+                    {
+                        listMeta:{
+                            title:`Node ${newNodeId} NEXT → Node ${oldIds[0]}`,
+                            nodeIds:oldIds,
+                            headId:oldIds[0],
+                            caption:
+                                `The new node now points to the old HEAD.`
+                        },
+
+                        newNode:value,
+                        newNodeId:newNodeId,
+                        newNextId:oldIds[0]
+                    }
+                )
+            );
+
+
+            fs.push(
+                frame(
+                    `Move HEAD from Node ${oldIds[0]} to Node ${newNodeId}.`,
+
+                    {array:afterList},
+
+                    {
+                        listMeta:{
+                            title:`HEAD → Node ${newNodeId}`,
+                            nodeIds:newIds,
+                            headId:newNodeId,
+                            caption:
+                                `HEAD now points to the newly inserted node.`
+                        }
+                    }
+                )
+            );
+
+        }
+
+
+        /*
+         * POSITION > 0
+         */
+        else{
+
+            const previousId =
+                oldIds[position-1];
+
+            const nextId =
+                position < oldIds.length
+                    ? oldIds[position]
+                    : undefined;
+
+
+            fs.push(
+                frame(
+                    `Set Node ${newNodeId}'s NEXT to Node ${nextId !== undefined ? nextId : 'NULL'}.`,
+
+                    {array:beforeList},
+
+                    {
+                        listMeta:{
+                            title:
+                                `Node ${newNodeId} NEXT → ${
+                                    nextId !== undefined
+                                        ? 'Node '+nextId
+                                        : 'NULL'
+                                }`,
+                            nodeIds:oldIds,
+                            headId:oldIds[0],
+                            currentId:previousId,
+                            caption:
+                                `The new node points to the node that was previously at position ${position}.`
+                        },
+
+                        newNode:value,
+                        newNodeId:newNodeId,
+                        newNextId:nextId
+                    }
+                )
+            );
+
+
+            fs.push(
+                frame(
+                    `Change Node ${previousId}'s NEXT so it points to Node ${newNodeId}.`,
+
+                    {array:afterList},
+
+                    {
+                        listMeta:{
+                            title:
+                                `Node ${previousId} NEXT → Node ${newNodeId}`,
+                            nodeIds:newIds,
+                            headId:newIds[0],
+                            currentId:newNodeId,
+                            caption:
+                                `The predecessor now points to the new node.`
+                        }
+                    }
+                )
+            );
+
+        }
+
+
+        /*
+         * FINAL INSERTION
+         */
+        fs.push(
+            frame(
+                `Insertion complete: ${afterList.join(' → ')} → NULL.`,
+
+                {array:afterList},
+
+                {
+                    listMeta:{
+                        title:'INSERTION COMPLETE',
+                        nodeIds:newIds,
+                        headId:newIds[0],
+                        caption:
+                            `HEAD → Node ${newIds[0]} and all NEXT pointers are connected.`
+                    }
+                }
+            )
+        );
+
+        return fs;
+    }
+
+
+    /*
+     * DELETE
+     */
+    if(d.operation === 'Linked List Deletion'){
+
+        const meta = d.meta || {};
+
+        const position = meta.position;
+        const value = meta.value;
+
+        const oldIds =
+            beforeList.map((_,i)=>i);
+
+        const newIds =
+            oldIds.filter((id)=>id !== position);
+
+
+        /*
+         * START
+         */
+        fs.push(
+            frame(
+                `Start at HEAD and find the node containing ${value}.`,
+
+                {array:beforeList},
+
+                {
+                    listMeta:{
+                        title:'DELETE — START',
+                        nodeIds:oldIds,
+                        headId:oldIds[0],
+                        caption:
+                            `Target: Node ${position}`
+                    }
+                }
+            )
+        );
+
+
+        /*
+         * TRAVERSE
+         */
+        for(let i=0;i<=position;i++){
+
+            fs.push(
+                frame(
+                    i === position
+                        ? `CURRENT reached Node ${i}. This is the target node.`
+                        : `CURRENT is at Node ${i}. Follow NEXT.`,
+
+                    {array:beforeList},
+
+                    {
+                        listMeta:{
+                            title:
+                                i === position
+                                    ? `TARGET → Node ${i}`
+                                    : `CURRENT → Node ${i}`,
+
+                            nodeIds:oldIds,
+                            headId:oldIds[0],
+                            currentId:oldIds[i],
+                            targetId:
+                                i === position
+                                    ? oldIds[i]
+                                    : undefined,
+
+                            caption:
+                                i === position
+                                    ? `Node ${i} contains ${value}.`
+                                    : `Continue following NEXT.`
+                        }
+                    }
+                )
+            );
+
+        }
+
+
+        /*
+         * DELETE HEAD
+         */
+        if(position === 0){
+
+            const newHead =
+                oldIds.length > 1
+                    ? oldIds[1]
+                    : undefined;
+
+            fs.push(
+                frame(
+                    `Move HEAD from Node 0 to ${newHead !== undefined ? 'Node '+newHead : 'NULL'}.`,
+
+                    {array:afterList},
+
+                    {
+                        listMeta:{
+                            title:
+                                newHead !== undefined
+                                    ? `HEAD → Node ${newHead}`
+                                    : 'HEAD → NULL',
+
+                            nodeIds:newIds,
+                            headId:newHead,
+
+                            caption:
+                                `The first node has been removed.`
+                        }
+                    }
+                )
+            );
+
+        }
+
+
+        /*
+         * DELETE MIDDLE / LAST
+         */
+        else{
+
+            const previousId =
+                oldIds[position-1];
+
+            const nextId =
+                position < oldIds.length-1
+                    ? oldIds[position+1]
+                    : undefined;
+
+            fs.push(
+                frame(
+                    `Change Node ${previousId}'s NEXT so it skips Node ${position}.`,
+
+                    {array:beforeList},
+
+                    {
+                        listMeta:{
+                            title:
+                                `Node ${previousId} NEXT → ${
+                                    nextId !== undefined
+                                        ? 'Node '+nextId
+                                        : 'NULL'
+                                }`,
+
+                            nodeIds:oldIds,
+                            headId:oldIds[0],
+                            currentId:previousId,
+                            targetId:position,
+
+                            caption:
+                                `Node ${position} is bypassed.`
+                        }
+                    }
+                )
+            );
+
+        }
+
+
+        /*
+         * FINAL DELETE
+         */
+        fs.push(
+            frame(
+                `Node ${position} has been removed. New list: ${
+                    afterList.length
+                        ? afterList.join(' → ')+' → NULL'
+                        : 'NULL'
+                }.`,
+
+                {array:afterList},
+
+                {
+                    listMeta:{
+                        title:'DELETION COMPLETE',
+                        nodeIds:newIds,
+                        headId:newIds[0],
+                        caption:
+                            'All remaining NEXT pointers form the new list.'
+                    }
+                }
+            )
+        );
+
+        return fs;
+    }
+
+
+    /*
+     * TRAVERSE
+     */
+    if(d.operation === 'Linked List Traversal'){
+
+        const ids =
+            beforeList.map((_,i)=>i);
+
+        fs.push(
+            frame(
+                'Set CURRENT = HEAD.',
+
+                {array:beforeList},
+
+                {
+                    listMeta:{
+                        title:'CURRENT = HEAD',
+                        nodeIds:ids,
+                        headId:ids[0],
+                        currentId:ids[0],
+                        caption:
+                            'Traversal starts from the first node.'
+                    }
+                }
+            )
+        );
+
+        beforeList.forEach((v,i)=>{
+
+            fs.push(
+                frame(
+                    `CURRENT is at Node ${i}. DATA = ${v}. Follow NEXT.`,
+
+                    {array:beforeList},
+
+                    {
+                        listMeta:{
+                            title:`CURRENT → Node ${i}`,
+                            nodeIds:ids,
+                            headId:ids[0],
+                            currentId:ids[i],
+                            nextId:
+                                i < ids.length-1
+                                    ? ids[i+1]
+                                    : undefined,
+                            caption:
+                                i < ids.length-1
+                                    ? `NEXT → Node ${ids[i+1]}`
+                                    : 'NEXT = NULL'
+                        }
+                    }
+                )
+            );
+
+        });
+
+        fs.push(
+            frame(
+                'CURRENT became NULL. Traversal stops.',
+
+                {array:beforeList},
+
+                {
+                    listMeta:{
+                        title:'CURRENT → NULL',
+                        nodeIds:ids,
+                        headId:ids[0],
+                        caption:
+                            'Every node has been visited.'
+                    }
+                }
+            )
+        );
+
+        return fs;
+    }
+
+
+    /*
+     * REVERSE
+     */
+    if(d.operation === 'Reverse Linked List'){
+
+        const ids =
+            beforeList.map((_,i)=>i);
+
+        fs.push(
+            frame(
+                'Initialize PREVIOUS = NULL, CURRENT = HEAD and NEXT = NULL.',
+
+                {array:beforeList},
+
+                {
+                    listMeta:{
+                        title:'INITIALIZE POINTERS',
+                        nodeIds:ids,
+                        headId:ids[0],
+                        currentId:ids[0],
+                        caption:
+                            'PREVIOUS = NULL | CURRENT = HEAD | NEXT = NULL'
+                    }
+                }
+            )
+        );
+
+
+        let previous = undefined;
+
+        for(let i=0;i<beforeList.length;i++){
+
+            const currentId = ids[i];
+
+            const nextId =
+                i < ids.length-1
+                    ? ids[i+1]
+                    : undefined;
+
+
+            /*
+             * SAVE NEXT
+             */
+            fs.push(
+                frame(
+                    `Save Node ${nextId !== undefined ? nextId : 'NULL'} in NEXT.`,
+
+                    {array:beforeList},
+
+                    {
+                        listMeta:{
+                            title:'SAVE NEXT',
+                            nodeIds:ids,
+                            headId:ids[0],
+                            previousId:previous,
+                            currentId:currentId,
+                            nextId:nextId,
+                            caption:
+                                `NEXT stores ${
+                                    nextId !== undefined
+                                        ? 'Node '+nextId
+                                        : 'NULL'
+                                }.`
+                        }
+                    }
+                )
+            );
+
+
+            /*
+             * REVERSE POINTER
+             */
+            fs.push(
+                frame(
+                    `Reverse Node ${currentId}'s NEXT pointer.`,
+
+                    {array:beforeList},
+
+                    {
+                        listMeta:{
+                            title:
+                                `Node ${currentId} NEXT ← ${
+                                    previous !== undefined
+                                        ? 'Node '+previous
+                                        : 'NULL'
+                                }`,
+
+                            nodeIds:ids,
+                            headId:ids[0],
+                            previousId:previous,
+                            currentId:currentId,
+                            nextId:nextId,
+
+                            caption:
+                                `Node ${currentId} now points backward.`
+                        }
+                    }
+                )
+            );
+
+
+            /*
+             * MOVE POINTERS
+             */
+            fs.push(
+                frame(
+                    `Move PREVIOUS to Node ${currentId} and CURRENT to Node ${
+                        nextId !== undefined
+                            ? nextId
+                            : 'NULL'
+                    }.`,
+
+                    {array:beforeList},
+
+                    {
+                        listMeta:{
+                            title:'MOVE POINTERS',
+                            nodeIds:ids,
+                            headId:ids[0],
+                            previousId:currentId,
+                            currentId:nextId,
+                            caption:
+                                'PREVIOUS moves forward and CURRENT follows the saved NEXT.'
+                        }
+                    }
+                )
+            );
+
+            previous = currentId;
+        }
+
+
+        /*
+         * FINAL
+         */
+        const reversedIds =
+            ids.slice().reverse();
+
+        fs.push(
+            frame(
+                `CURRENT is NULL. Move HEAD to the former last node, Node ${reversedIds[0]}.`,
+
+                {array:afterList},
+
+                {
+                    listMeta:{
+                        title:`HEAD → Node ${reversedIds[0]}`,
+                        nodeIds:reversedIds,
+                        headId:reversedIds[0],
+                        caption:
+                            `Reversed list: ${afterList.join(' → ')} → NULL`
+                    }
+                }
+            )
+        );
+
+        return fs;
+    }
+
+
+    // fallback for linked list
+    fs.push(
+        frame(
+            d.message,
+            {array:afterList},
+            {
+                listMeta:{
+                    nodeIds:afterList.map((_,i)=>i),
+                    headId:afterList.length ? 0 : undefined
+                }
+            }
+        )
+    );
+
+    return fs;
+}if(moduleName==='doubly-linked-list'){if(d.operation==='Create Doubly Linked List'){fs.push(frame('HEAD points to node 0. PREV = NULL and NEXT points forward to node 1.',{array:a},{pointerIndex:0,pointerLabel:'HEAD → node 0'}));a.forEach((v,i)=>fs.push(frame(i===0?`Node 0: DATA = ${v}. PREV = NULL. NEXT points to node 1.`:i===a.length-1?`Node ${i}: DATA = ${v}. PREV points to node ${i-1}. NEXT = NULL.`:`Node ${i}: DATA = ${v}. PREV → node ${i-1}, NEXT → node ${i+1}.`,{array:a},{highlight:[i],pointerIndex:i,pointerLabel:`NODE ${i}`})));fs.push(frame(`The list can be traversed forward ${a.join(' → ')} and backward ${a.slice().reverse().join(' → ')}.`,{array:a},{pointerLabel:'TWO-WAY TRAVERSAL'}));}else a.forEach((v,i)=>fs.push(frame(`Node ${i}: DATA = ${v}. PREV ${i?'→ node '+(i-1):'= NULL'}; NEXT ${i<a.length-1?'→ node '+(i+1):'= NULL'}.`,{array:a},{highlight:[i],pointerIndex:i,pointerLabel:`NODE ${i}`})));if(!fs.length)fs.push(frame(d.message,{array:a}));return fs}if(moduleName==='stack'){const b=before.array||before.stack||[];const f=after.array||after.stack||[];const action=(d.operation||'').toLowerCase();if(action.includes('push')){const v=f[f.length-1];fs.push(frame(`Before PUSH, the stack is [${b.join(', ')}]. TOP is ${b.length?b[b.length-1]:'empty'}.`,{array:b},{pointerLabel:'BEFORE PUSH'}));fs.push(frame(`Create a new element containing ${v} and place it above the current TOP.`,{array:b.concat([v])},{highlight:[f.length-1],pointerLabel:'NEW ELEMENT'}));fs.push(frame(`Update TOP to point to ${v}. The resultant stack is [${f.join(', ')}].`,{array:f},{highlight:[f.length-1],pointerLabel:'TOP → '+v}));}else if(action.includes('pop')){const removed=b[b.length-1];fs.push(frame(`Before POP, TOP points to ${removed}.`,{array:b},{highlight:[b.length-1],pointerLabel:'TOP → '+removed}));fs.push(frame(`Remove the element ${removed} from TOP.`,{array:b.slice(0,-1)},{pointerLabel:'REMOVE TOP'}));fs.push(frame(`Move TOP to ${f.length?f[f.length-1]:'empty'}. Resultant stack: [${f.join(', ')}].`,{array:f},{highlight:f.length?[f.length-1]:[],pointerLabel:f.length?'TOP → '+f[f.length-1]:'STACK EMPTY'}));}else if(action.includes('peek')){fs.push(frame(`PEEK reads the current TOP without removing anything.`,{array:f},{highlight:[f.length-1],pointerLabel:'PEEK'}));fs.push(frame(`TOP = ${f[f.length-1]}. The stack remains unchanged: [${f.join(', ')}].`,{array:f},{highlight:[f.length-1],pointerLabel:'TOP → '+f[f.length-1]}));}else{fs.push(frame(`Display reads the stack from BOTTOM to TOP.`,{array:f},{pointerLabel:'DISPLAY'}));f.forEach((v,i)=>fs.push(frame(`Position ${i} contains ${v}${i===f.length-1?' and TOP points here.':'.'}`,{array:f},{highlight:[i],pointerLabel:i===f.length-1?'TOP':'POSITION '+i})));}if(!fs.length)fs.push(frame(d.message,{array:f}));return fs}if(moduleName==='queue'){a.forEach((v,i)=>fs.push(frame(`Queue position ${i} stores ${v}. ${i===0?'FRONT points here.':i===a.length-1?'REAR points here.':''}`,{array:a},{highlight:[i],pointerLabel:i===0?'FRONT':i===a.length-1?'REAR':'QUEUE'})));if(!fs.length)fs.push(frame(d.message,{array:a}));return fs}if(moduleName==='tree'){const n=after.nodes||[];(d.steps||[]).forEach((s,i)=>fs.push(frame(s,{nodes:n},{highlight:[],pointerLabel:`TREE STEP ${i+1}`})));fs.push(frame(d.message,{nodes:n},{highlight:d.highlight||[],pointerLabel:'FINAL TREE'}));return fs}if(moduleName==='graph'){(d.steps||[]).forEach((s,i)=>fs.push(frame(s,{graph:after.graph},{highlight:(d.highlight||[]).slice(0,Math.max(1,i+1)),pointerLabel:`GRAPH STEP ${i+1}`})));return fs}if(moduleName==='hashing'){const b=after.buckets||state.hash;for(let i=0;i<10;i++)fs.push(frame(`Inspect bucket ${i}. ${b[i].length?`It contains ${b[i].join(' → ')}.`:'It is empty.'}`,{buckets:b},{highlight:i,pointerLabel:`BUCKET ${i}`}));return fs}return [frame(d.message,after)]}
 function setControlsDisabled(disabled){document.querySelectorAll('#controlsArea button,#controlsArea input').forEach(el=>{el.disabled=disabled});}
-async function run(action){if(busy||switching)return;const epoch=moduleEpoch;if(moduleName==='oop'){showConcept('oop');return}if(moduleName==='dsa-concepts'){showConcept('dsa');return}if(moduleName==='notes'){renderNotes();return}const before=JSON.parse(JSON.stringify(state)),raw=inputs();busy=true;setControlsDisabled(true);try{let d;if(moduleName==='array'){if(action==='create'){let vals=[...$('controlsArea').querySelectorAll('.arr-input')].map(e=>Number(e.value));if(!vals.length)throw Error('Enter number of elements and generate input fields.');if(vals.some(Number.isNaN))throw Error('Fill every generated input field.');d=await api('/array/create',{values:vals})}else if(action==='insert')d=await api('/array/insert',{position:Number(raw.index),value:Number(raw.value)});else if(action==='delete')d=await api('/array/delete',{position:Number(raw.index)});else if(action==='search')d=await api('/array/search',{value:Number(raw.value)});else d=await api('/array/traverse')}else if(moduleName==='linked-list'){if(action==='create'){const vals=parseVals(raw.values);state.linked=vals.slice();listVis(state.linked);$('status').textContent='Building list…';d=await api('/linked-list/create',{values:vals});if(JSON.stringify(d.array||[])!==JSON.stringify(vals))throw Error('The server returned values different from your input. Please restart the backend.')}else d=await api('/linked-list/'+action,{position:Number(raw.index),value:Number(raw.value)})}else if(moduleName==='doubly-linked-list'){if(action==='create'){const vals=parseVals(raw.values);state.dlinked=vals.slice();dlistVis(state.dlinked);$('status').textContent='Building doubly linked list…';d=await api('/doubly-linked-list/create',{values:vals});if(JSON.stringify(d.array||[])!==JSON.stringify(vals))throw Error('The server returned values different from your input. Please restart the backend.')}else d=await api('/doubly-linked-list/'+action,{position:Number(raw.index),value:Number(raw.value)})}else if(moduleName==='stack'){if(action==='push'){if(raw.value==='')throw Error('Enter a value before Push.');d=await api('/stack/push',{value:Number(raw.value)})}else d=await api('/stack/'+action,{})}else if(moduleName==='queue')d=await api('/queue/'+action,{value:Number(raw.value)});else if(moduleName==='tree')d=await api('/tree/'+action,{value:Number(raw.value)});else if(moduleName==='graph')d=await api('/graph/'+action,{vertex:raw.vertex,from:raw.from,to:raw.to,start:raw.start});else if(moduleName==='hashing')d=await api('/hashing/'+action,{key:Number(raw.value)});else if(moduleName==='searching')d=await api('/searching/'+action,{values:parseVals(raw.values),value:Number(raw.value)});else d=await api('/sorting/'+action,{values:parseVals(raw.values)});
+async function run(action){if(busy||switching)return;const epoch=moduleEpoch;if(moduleName==='oop'){showConcept('oop');return}if(moduleName==='dsa-concepts'){showConcept('dsa');return}if(moduleName==='notes'){renderNotes();return}const before=JSON.parse(JSON.stringify(state)),raw=inputs();busy=true;setControlsDisabled(true);try{let d;if(moduleName==='array'){if(action==='create'){let vals=[...$('controlsArea').querySelectorAll('.arr-input')].map(e=>Number(e.value));if(!vals.length)throw Error('Enter number of elements and generate input fields.');if(vals.some(Number.isNaN))throw Error('Fill every generated input field.');d=await api('/array/create',{values:vals})}else if(action==='insert')d=await api('/array/insert',{position:Number(raw.index),value:Number(raw.value)});else if(action==='delete')d=await api('/array/delete',{position:Number(raw.index)});else if(action==='search')d=await api('/array/search',{value:Number(raw.value)});else d=await api('/array/traverse')}
+else if(moduleName==='linked-list'){
+    if(action==='create'){
+        const vals=parseVals(raw.values);
+        state.linked=vals.slice();
+        listVis(state.linked);
+        $('status').textContent='Building list…';
+
+        d=await api('/linked-list/create',{values:vals});
+
+        if(JSON.stringify(d.array||[])!==JSON.stringify(vals))
+            throw Error('The server returned values different from your input. Please restart the backend.');
+
+    }else if(action==='delete'){
+        d=await api('/linked-list/delete',{
+            value:Number(raw.value)
+        });
+
+    }else{
+        d=await api('/linked-list/'+action,{
+            position:Number(raw.index),
+            value:Number(raw.value)
+        });
+    }
+}else if(moduleName==='doubly-linked-list'){if(action==='create'){const vals=parseVals(raw.values);state.dlinked=vals.slice();dlistVis(state.dlinked);$('status').textContent='Building doubly linked list…';d=await api('/doubly-linked-list/create',{values:vals});if(JSON.stringify(d.array||[])!==JSON.stringify(vals))throw Error('The server returned values different from your input. Please restart the backend.')}else d=await api('/doubly-linked-list/'+action,{position:Number(raw.index),value:Number(raw.value)})}else if(moduleName==='stack'){if(action==='push'){if(raw.value==='')throw Error('Enter a value before Push.');d=await api('/stack/push',{value:Number(raw.value)})}else d=await api('/stack/'+action,{})}else if(moduleName==='queue')d=await api('/queue/'+action,{value:Number(raw.value)});else if(moduleName==='tree')d=await api('/tree/'+action,{value:Number(raw.value)});else if(moduleName==='graph')d=await api('/graph/'+action,{vertex:raw.vertex,from:raw.from,to:raw.to,start:raw.start});else if(moduleName==='hashing')d=await api('/hashing/'+action,{key:Number(raw.value)});else if(moduleName==='searching')d=await api('/searching/'+action,{values:parseVals(raw.values),value:Number(raw.value)});else d=await api('/sorting/'+action,{values:parseVals(raw.values)});
 if(epoch!==moduleEpoch)return; if(['array','searching','sorting'].includes(moduleName))state.array=d.array||[];else if(moduleName==='linked-list')state.linked=d.array||[];else if(moduleName==='doubly-linked-list')state.dlinked=d.array||[];else if(moduleName==='stack')state.stack=d.array||[];else if(moduleName==='queue')state.queue=d.array||[];else if(moduleName==='tree')state.tree=d.nodes||[];else if(moduleName==='graph')state.graph=d.graph||state.graph;else state.hash=d.buckets||state.hash;
 logSteps(d.steps||[]);setComplexity(d.complexity);$('operation').textContent=d.operation||action;$('status').textContent=d.message||'Completed';if(moduleName==='stack'&&$('stackResult'))$('stackResult').innerHTML=`<b>${esc(d.message||'Completed')}</b><span>Current stack (TOP → BOTTOM): [${(d.array||[]).slice().reverse().map(esc).join(', ')||'empty'}]</span>`;operationCount++;$('opCount').textContent=operationCount;const frames=genericFrames(moduleName,d,before,state,raw);setup(frames);history.push({module:moduleName.toUpperCase(),operation:d.operation||action,input:Object.entries(raw).filter(([,v])=>v!=='').map(([k,v])=>`${k}: ${v}`).join(' | ')||'—',result:d.message||'Completed',time:d.complexity?.time||'—'});renderHistory();toast(d.message||'Completed')}catch(e){toast(e.message)}finally{busy=false;setControlsDisabled(false)}}
 function renderHistory(){$('historyCount').textContent=`${history.length} experiment${history.length===1?'':'s'}`;$('historyArea').innerHTML=history.length?`<table class="table"><thead><tr><th>#</th><th>MODULE</th><th>OPERATION</th><th>INPUT</th><th>RESULT</th><th>TIME</th></tr></thead><tbody>${history.slice().reverse().map((h,i)=>`<tr><td>${history.length-i}</td><td>${h.module}</td><td><b>${esc(h.operation)}</b></td><td>${esc(h.input)}</td><td class="ok">✓ ${esc(h.result)}</td><td>${esc(h.time)}</td></tr>`).join('')}</tbody></table>`:'<div class="log-empty">No experiments yet.</div>'}

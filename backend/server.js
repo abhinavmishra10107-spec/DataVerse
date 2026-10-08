@@ -127,15 +127,96 @@ app.post('/api/linked-list/insert', (req, res) => {
   response(res, 'Linked List Insertion', { array: L, steps, complexity: C(p === 0 ? 'O(1)' : 'O(n)', 'O(1) auxiliary', 'Finding a general position requires traversal.'), message: `Inserted ${v} at position ${p}.`, highlight: [p], meta: { position: p, value: v, before } });
 });
 app.post('/api/linked-list/delete', (req, res) => {
-  const p = Number(req.body.position);
-  if (!Number.isInteger(p) || p < 0 || p >= L.length) return res.status(400).json({ error: 'Invalid linked-list position.' });
-  const before = L.slice(), x = L[p]; const steps = [`Begin at HEAD and follow NEXT pointers one node at a time.`];
-  for (let i = 0; i <= p; i++) steps.push(`Visit node ${i}, where value ${L[i]} is stored.${i === p ? ' This is the target node.' : ' It is not the target, so continue through NEXT.'}`);
-  if (p === 0) steps.push(`Move HEAD from the node containing ${x} to the next node.`); else { steps.push(`Keep the predecessor node at position ${p - 1}.`); steps.push(`Change its NEXT pointer so it skips the node containing ${x} and points directly to position ${p + 1 < L.length ? p + 1 : 'NULL'}.`); }
-  L.splice(p, 1); steps.push(`Remove the target node ${x}.`); steps.push(`Following HEAD and NEXT now gives: ${L.join(' → ')}${L.length ? ' → NULL' : 'NULL'}.`);
-  response(res, 'Linked List Deletion', { array: L, steps, complexity: C(p === 0 ? 'O(1)' : 'O(n)', 'O(1) auxiliary', 'Traversal is required for a general position.'), message: `Deleted ${x}.`, highlight: [], meta: { position: p, value: x, before } });
-});
-app.post('/api/linked-list/traverse', (req, res) => {
+
+  const value = Number(req.body.value);
+
+  if (Number.isNaN(value)) {
+    return res.status(400).json({
+      error: 'Enter a value to delete.'
+    });
+  }
+
+  // Find the position of the VALUE
+  const p = L.indexOf(value);
+
+  // Value does not exist
+  if (p === -1) {
+    return res.status(404).json({
+      error: `Value ${value} was not found in the linked list.`
+    });
+  }
+
+  const before = L.slice();
+  const x = L[p];
+
+  const steps = [
+    `Start at HEAD and search for the node containing ${value}.`
+  ];
+
+  // Traverse until the value is found
+  for (let i = 0; i <= p; i++) {
+
+    if (L[i] === value) {
+      steps.push(
+        `Visit node ${i}, where DATA = ${L[i]}. This is the target node.`
+      );
+    } else {
+      steps.push(
+        `Visit node ${i}, where DATA = ${L[i]}. It is not the target, so follow NEXT.`
+      );
+    }
+
+  }
+
+  if (p === 0) {
+
+    steps.push(
+      `The target is the HEAD node, so move HEAD to the next node.`
+    );
+
+  } else {
+
+    steps.push(
+      `Node ${p - 1} is the predecessor of the target node.`
+    );
+
+    steps.push(
+      `Change Node ${p - 1}'s NEXT pointer so it skips the target node.`
+    );
+
+  }
+
+  // Actually remove the value
+  L.splice(p, 1);
+
+  steps.push(
+    `Remove the node containing ${x}.`
+  );
+
+  steps.push(
+    `The new linked-list order is: ${
+      L.length ? L.join(' → ') + ' → NULL' : 'NULL'
+    }`
+  );
+
+  response(res, 'Linked List Deletion', {
+    array: L,
+    steps,
+    complexity: C(
+      'O(n)',
+      'O(1) auxiliary',
+      'The list may need to be traversed to find the value.'
+    ),
+    message: `Deleted value ${x}.`,
+    highlight: [],
+    meta: {
+      position: p,
+      value: x,
+      before
+    }
+  });
+
+});app.post('/api/linked-list/traverse', (req, res) => {
   const steps = [`Set a traversal pointer current = HEAD.`]; L.forEach((v, i) => steps.push(`current is at node ${i}. DATA = ${v}. Read the value, then follow NEXT to node ${i + 1 < L.length ? i + 1 : 'NULL'}.`)); steps.push('When current becomes NULL, the traversal stops.');
   response(res, 'Linked List Traversal', { array: L, steps, complexity: C('O(n)', 'O(1)', 'Every node is visited once.'), message: 'Linked-list traversal completed.' });
 });
