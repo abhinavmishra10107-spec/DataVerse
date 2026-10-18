@@ -160,8 +160,22 @@ app.post('/api/linked-list/create', (req, res) => {
   response(res, 'Create Linked List', { array: L, steps, complexity: C('O(n)', 'O(n)', 'One node is required for every input value.'), message: `${L.length} nodes created.` });
 });
 app.post('/api/linked-list/insert', (req, res) => {
-  const p = Number(req.body.position), v = Number(req.body.value);
-  if (!Number.isInteger(p) || p < 0 || p > L.length) return res.status(400).json({ error: 'Invalid linked-list position.' });
+   const p = Number(req.body.position);
+  const rawValue = req.body.value;
+
+  if (rawValue === undefined || rawValue === null || String(rawValue).trim() === '') {
+    return res.status(400).json({ error: 'Enter a numeric value to insert.' });
+  }
+
+  const v = Number(rawValue);
+
+  if (!Number.isFinite(v)) {
+    return res.status(400).json({ error: 'Linked-list value must be a finite number.' });
+  }
+
+  if (!Number.isInteger(p) || p < 0 || p > L.length) {
+    return res.status(400).json({ error: 'Invalid linked-list position.' });
+  }
   const before = L.slice(); const steps = [`Start at HEAD, which points to node 0.`];
   if (p === 0) steps.push(`Because the position is 0, create node ${v} and make it the new HEAD. Its NEXT points to the old first node.`);
   else { for (let i = 0; i < p; i++) steps.push(`At node ${i}, value ${L[i]} is stored. Follow its NEXT pointer to node ${i + 1}.`); steps.push(`Create a new node containing ${v}.`); steps.push(`Change the previous node's NEXT pointer so it points to the new node.`); steps.push(`Set the new node's NEXT pointer to the node that was previously at position ${p}.`); }
