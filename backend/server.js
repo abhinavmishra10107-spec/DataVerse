@@ -17,9 +17,38 @@ app.get('/api/health', (req, res) => res.json({ status: 'ok', service: 'DataVers
 
 // ---------------- ARRAY ----------------
 app.post('/api/array/create', (req, res) => {
-  const values = Array.isArray(req.body.values) ? req.body.values.map(Number) : [];
-  if (!values.length) return res.status(400).json({ error: 'Enter at least one array element.' });
-  if (values.some(Number.isNaN)) return res.status(400).json({ error: 'Array values must be numeric.' });
+ 
+const rawValues = Array.isArray(req.body.values)
+  ? req.body.values
+  : [];
+
+if (!rawValues.length) {
+  return res.status(400).json({
+    error: 'Enter at least one array element.'
+  });
+}
+
+if (
+  rawValues.some(
+    value =>
+      value === null ||
+      value === undefined ||
+      String(value).trim() === ''
+  )
+) {
+  return res.status(400).json({
+    error: 'Enter a value for every array element.'
+  });
+}
+
+const values = rawValues.map(Number);
+
+if (values.some(value => !Number.isFinite(value))) {
+  return res.status(400).json({
+    error: 'Array values must be finite numbers.'
+  });
+}
+
   A = values;
   const steps = [
     `The user entered ${A.length} as the number of elements.`,
