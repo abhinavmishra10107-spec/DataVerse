@@ -39,8 +39,22 @@ app.post('/api/array/create', (req, res) => {
 });
 
 app.post('/api/array/insert', (req, res) => {
-  const p = Number(req.body.position), v = Number(req.body.value);
-  if (!Number.isInteger(p) || p < 0 || p > A.length) return res.status(400).json({ error: 'Invalid insertion index.' });
+  
+const p = Number(req.body.position);
+const rawValue = req.body.value;
+if (rawValue === undefined || rawValue === null || String(rawValue).trim() === '') {
+  return res.status(400).json({ error: 'Enter a numeric value to insert.' });
+}
+
+const v = Number(rawValue);
+
+if (!Number.isFinite(v)) {
+  return res.status(400).json({ error: 'Array value must be a finite number.' });
+}
+
+if (!Number.isInteger(p) || p < 0 || p > A.length) {
+  return res.status(400).json({ error: 'Invalid insertion index.' });
+}
   const before = A.slice();
   const steps = [
     `Check that index ${p} is valid. A valid insertion index is from 0 through ${before.length}.`,
