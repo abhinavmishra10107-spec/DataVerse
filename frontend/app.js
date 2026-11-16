@@ -318,7 +318,7 @@ const DSA_TOPICS={
  graph:{title:'Graph',summary:'A graph contains vertices connected by edges and can represent networks and relationships.',time:'BFS/DFS O(V + E)',space:'O(V)',steps:['Create vertices.','Connect related vertices with edges.','BFS explores level by level using a queue.','DFS explores deeply using recursion or a stack.'],visual:'graph'},
  hashing:{title:'Hashing',summary:'A hash function maps a key to a bucket for fast average-case lookup.',time:'Average search/insert O(1); worst O(n)',space:'O(n)',steps:['Take a key such as 42.','Compute a bucket index such as key % 10.','Store the key in that bucket.','Handle collisions using a chain or another collision strategy.'],visual:'hash'},
  searching:{title:'Searching',summary:'Linear search checks elements sequentially; binary search repeatedly halves a sorted search range.',time:'Linear O(n); Binary O(log n)',space:'Linear O(1) extra; binary O(1) iterative extra',steps:['Choose a target value.','Linear search checks from left to right.','Binary search needs sorted data.','Binary search compares the middle and discards half the range.'],visual:'search'},
- sorting:{title:'Sorting',summary:'Sorting arranges values according to an ordering rule.',time:'Bubble/Selection/Insertion O(n²) worst; Merge O(n log n)',space:'Merge sort O(n) auxiliary; simple sorts O(1) auxiliary',steps:['Start with an unsorted sequence.','Compare or select values according to the algorithm.','Move values toward their final positions.','Repeat until the sequence is ordered.'],visual:'sort'}
+ sorting:{title:'Sorting',summary:'Sorting arranges values according to an ordering rule.',time:'Bubble/Selection/Insertion O(n²) worst; Merge O(n log n);Quick O(n log n) average, O(n²) worst.',space:'Merge Sort: O(n) auxiliary; Quick Sort: O(n) average recursion space with this implementation; Bubble, Selection and Insertion: O(1) auxiliary.',steps:['Start with an unsorted sequence.','Compare or select values according to the algorithm.','Move values toward their final positions.','Repeat until the sequence is ordered.'],visual:'sort'}
 };
 const NOTES=[
  ['OOP','Class & Object','Class = blueprint. Object = instance of a class.'],['OOP','Encapsulation','Use private data and public methods to control access.'],['OOP','Abstraction','Expose essential operations and hide implementation details.'],['OOP','Inheritance','Derived classes reuse and extend base-class behavior.'],['OOP','Polymorphism','Compile-time: overloading. Runtime: virtual functions/overriding.'],['OOP','Constructor','Runs when an object is created and initializes members.'],['OOP','Destructor','Runs when an object lifetime ends and performs cleanup.'],['OOP','Composition','HAS-A relationship: one class contains another object.'],['DSA','Array','Indexed, contiguous-style storage; direct access is O(1).'],['DSA','Linked List','Nodes connected by NEXT references; sequential access is O(n).'],['DSA','Doubly Linked List','Nodes contain PREV and NEXT references, enabling traversal in both directions.'],['DSA','Stack','LIFO; Push, Pop and Peek are typically O(1).'],['DSA','Queue','FIFO; Enqueue/Dequeue can be O(1) with a suitable implementation.'],['DSA','Binary Tree','Each node has at most two children.'],['DSA','BST','Left subtree values are smaller and right subtree values are larger.'],['DSA','Graph','Vertices + edges; BFS/DFS are O(V+E).'],['DSA','Hashing','Maps keys to buckets; average lookup is O(1).'],['Algorithms','Linear Search','Checks elements one by one; O(n).'],['Algorithms','Binary Search','Requires sorted data; O(log n).'],['Algorithms','Bubble Sort','Repeatedly compares adjacent elements; O(n²) worst.'],['Algorithms','Selection Sort','Selects the smallest remaining element; O(n²).'],['Algorithms','Insertion Sort','Inserts each item into the sorted left portion; O(n²) worst.'],['Algorithms','Merge Sort','Divide and conquer sorting; O(n log n), O(n) auxiliary space.'],['Analysis','Big-O','Describes asymptotic growth of time or space as n increases.']
@@ -433,6 +433,29 @@ function renderNotes() {
     category.addEventListener('change', renderNotes);
   }
 }
+function setupActiveButtons() {
+    const area = $('controlsArea');
+
+    if (area.dataset.activeButtonsReady === 'true') return;
+
+    area.dataset.activeButtonsReady = 'true';
+
+    area.addEventListener('click', function(event) {
+        const button = event.target.closest('.btns button');
+
+        if (!button || !area.contains(button)) return;
+
+        const group = button.closest('.btns');
+
+        // Remove the active style from other buttons in this group
+        group.querySelectorAll('button').forEach(btn => {
+            btn.classList.remove('primary');
+        });
+
+        // Highlight the clicked button
+        button.classList.add('primary');
+    });
+}
 function controls(){let h='';if(moduleName==='oop')h=conceptControls('oop');else if(moduleName==='dsa-concepts')h=conceptControls('dsa');else if(moduleName==='notes'){h='<div class="form"><div class="help"><b>Notes & Revision:</b> Search definitions, relationships and complexity reminders. The full notes collection appears in the visualization area.</div><button class="btn primary full" type="button" onclick="renderNotes()">Open Notes</button></div>';}else if(moduleName==='array')h=`<div class="form"><div class="two"><div class="field"><label>NUMBER OF ELEMENTS</label><input id="array-n" type="number" min="1" max="30" placeholder="5"></div><button class="btn" onclick="makeArrayFields()">Generate Input Fields</button></div><div id="arrayFields" class="generated-grid"></div><button class="btn primary full" onclick="run('create')">Create Array</button><div class="two"><div class="field"><label>INDEX</label><input id="array-index" type="number" placeholder="2"></div><div class="field"><label>VALUE</label><input id="array-value" type="number" placeholder="99"></div></div><div class="btns"><button class="btn primary" onclick="run('insert')">＋ Insert</button><button class="btn danger" onclick="run('delete')">− Delete</button><button class="btn" onclick="run('search')">⌕ Search</button><button class="btn" onclick="run('traverse')">→ Traverse</button></div><div class="help">Creation follows the same logic as a C++ loop: <b>for (int i = 0; i &lt; n; i++) cin &gt;&gt; arr[i];</b></div></div>`;
 else if(moduleName==='doubly-linked-list')h=`<div class="form"><div class="field"><label>VALUES</label><input id="dlinked-values" name="dlinked_values_fresh" autocomplete="off" spellcheck="false" placeholder="10,20,30,40"></div><button class="btn primary full" onclick="run('create')">Create Doubly Linked List</button><div class="two"><div class="field"><label>POSITION</label><input id="dlinked-index" name="dlinked_index_fresh" type="number" autocomplete="off" placeholder="1"></div><div class="field"><label>VALUE</label><input id="dlinked-value" name="dlinked_value_fresh" type="number" autocomplete="off" placeholder="99"></div></div><div class="btns"><button class="btn primary" onclick="run('insert')">＋ Insert</button><button class="btn danger" onclick="run('delete')">− Delete</button><button class="btn" onclick="run('traverse')">⇄ Traverse</button><button class="btn" onclick="run('reverse')">↶ Reverse</button></div><div class="help"><b>Two-way pointers:</b> PREV moves backward and NEXT moves forward. Try clicking a node after creation.</div></div>`;
 else if(moduleName==='linked-list')h=`<div class="form"><div class="field"><label>VALUES</label><input id="linked-values"name="linked_values_${Date.now()}"autocomplete="off"spellcheck="false"value=""placeholder="10,20,30,40,50"></div><button class="btn primary full" onclick="run('create')">Create List</button><div class="two"><div class="field"><label>POSITION</label><input id="linked-index" name="linked_list_index_fresh" type="number" autocomplete="off" placeholder="1"></div><div class="field"><label>VALUE</label><input id="linked-value" name="linked_list_value_fresh" type="number" autocomplete="off" placeholder="99"></div></div><div class="btns"><button class="btn primary" onclick="run('insert')">＋ Insert</button><button class="btn danger" onclick="run('delete')">− Delete</button><button class="btn" onclick="run('traverse')">→ Traverse</button><button class="btn" onclick="run('reverse')">↶ Reverse</button></div></div>`;
@@ -442,7 +465,14 @@ else if(moduleName==='tree')h=`<div class="form"><div class="field"><label>VALUE
 else if(moduleName==='graph')h=`<div class="form"><div class="two"><div class="field"><label>VERTEX</label><input id="graph-vertex" name="graph_vertex_fresh" autocomplete="off" placeholder="A"></div><button class="btn primary" onclick="run('addVertex')">＋ Add Vertex</button></div><div class="two"><div class="field"><label>FROM</label><input id="graph-from" name="graph_from_fresh" autocomplete="off" placeholder="A"></div><div class="field"><label>TO</label><input id="graph-to" name="graph_to_fresh" autocomplete="off" placeholder="B"></div></div><button class="btn primary full" onclick="run('addEdge')">Connect Edge</button><div class="two"><div class="field"><label>START VERTEX</label><input id="graph-start" name="graph_start_fresh" autocomplete="off" placeholder="A"></div><button class="btn" onclick="run('bfs')">BFS</button></div><button class="btn" onclick="run('dfs')">DFS</button></div>`;
 else if(moduleName==='hashing')h=`<div class="form"><div class="field"><label>KEY</label><input id="hash-value" name="hash_value_fresh" type="number" autocomplete="off" placeholder="42"></div><div class="btns"><button class="btn primary" onclick="run('insert')">＋ Insert</button><button class="btn danger" onclick="run('delete')">− Delete</button><button class="btn" onclick="run('search')">⌕ Search</button><button class="btn" onclick="run('display')">Display</button></div><div class="help">Hash function: <b>index = |key| % 10</b>. Collisions stay together in a bucket chain.</div></div>`;
 else if(moduleName==='searching')h=`<div class="form"><div class="field"><label>ARRAY</label><input id="search-values" name="search_values_fresh" autocomplete="new-password" spellcheck="false" placeholder="10,20,30,40,50"></div><div class="field"><label>SEARCH VALUE</label><input id="search-value" name="search_value_fresh" type="number" autocomplete="off" placeholder="30"></div><div class="btns"><button class="btn primary" onclick="run('linear')">Linear Search</button><button class="btn" onclick="run('binary')">Binary Search</button></div></div>`;
-else h=`<div class="form"><div class="field"><label>ARRAY</label><input id="sort-values" name="sort_values_fresh" autocomplete="new-password" placeholder="50,20,40,10,30"></div><div class="btns"><button class="btn primary" onclick="run('bubble')">Bubble Sort</button><button class="btn" onclick="run('selection')">Selection Sort</button><button class="btn" onclick="run('insertion')">Insertion Sort</button></div></div>`;$('controlsArea').innerHTML=h; clearCurrentModuleInputs()}
+else h=`<div class="form"><div class="field"><label>ARRAY</label><input id="sort-values" name="sort_values_fresh" autocomplete="new-password" placeholder="50,20,40,10,30"></div><div class="btns">
+<button class="btn primary" onclick="run('bubble')">Bubble Sort</button>
+<button class="btn" onclick="run('selection')">Selection Sort</button>
+<button class="btn" onclick="run('insertion')">Insertion Sort</button>
+<button class="btn" onclick="run('merge')">Merge Sort</button>
+<button class="btn" onclick="run('quick')">Quick Sort</button>
+</div></div> `;$('controlsArea').innerHTML=h; setupActiveButtons(); clearCurrentModuleInputs()}
+
 function clearCurrentModuleInputs(){
   document.querySelectorAll('#controlsArea input').forEach((el)=>{
     el.value='';
@@ -457,12 +487,224 @@ function clearCurrentModuleInputs(){
 }
 function parseVals(s){const raw=String(s??'').trim();if(!raw)throw Error('Enter comma-separated numeric values.');const parts=raw.split(',').map(x=>x.trim());if(parts.some(x=>x===''))throw Error('Do not leave an empty value between commas.');if(parts.some(x=>!/^[-+]?\d+(?:\.\d+)?$/.test(x)))throw Error('Use only numbers separated by commas, for example: 10,20,30,40.');const a=parts.map(Number);if(a.some(x=>!Number.isFinite(x)))throw Error('Enter valid numeric values.');return a}
 function detailed(op,d,raw,before,after){const o=op.toLowerCase(),a=before.array||[],f=after.array||[];if(o.includes('create array'))return d.steps;if(o==='insertion'||o==='deletion'||o==='traversal'||o.includes('search')||o.includes('sort'))return d.steps;if(o.includes('linked list'))return d.steps;if(o.startsWith('stack')||o.startsWith('queue')||o.includes('tree')||o==='bfs'||o==='dfs'||o.includes('hash'))return d.steps;return d.steps||[]}
-function arrayFrames(d,before,after,raw){const op=d.operation.toLowerCase(),a=before.array||[],f=after.array||[],fs=[];if(op.includes('create array')){fs.push(frame('Begin with an empty array. The program first asks the user for the number of elements.',{array:[]},{pointerLabel:'START CREATION'}));for(let i=0;i<f.length;i++){fs.push(frame(`Loop iteration ${i+1}: i = ${i}. Read the value ${f[i]} from the user and store it at array index ${i}.`,{array:f.slice(0,i).concat(['']).concat(Array(Math.max(0,f.length-i-1)).fill(''))},{pointer:i,pointerLabel:`arr[${i}] = ${f[i]}`}));}fs.push(frame(`The loop finishes after i reaches ${f.length}. Final array: [${f.join(', ')}].`,{array:f},{pointerLabel:'ARRAY CREATED'}));}
+function arrayFrames(d,before,after,raw){
+    const op = d.operation.toLowerCase();
+
+   // Use the original input whenever the sorting module is active
+const a = (moduleName === 'sorting' || moduleName === 'searching')
+    ? parseVals(raw.values)
+    : (before.array || []);
+    // Final result returned by the backend
+    const f = after.array || [];
+
+    const fs = [];
+if(op.includes('create array')){fs.push(frame('Begin with an empty array. The program first asks the user for the number of elements.',{array:[]},{pointerLabel:'START CREATION'}));for(let i=0;i<f.length;i++){fs.push(frame(`Loop iteration ${i+1}: i = ${i}. Read the value ${f[i]} from the user and store it at array index ${i}.`,{array:f.slice(0,i).concat(['']).concat(Array(Math.max(0,f.length-i-1)).fill(''))},{pointer:i,pointerLabel:`arr[${i}] = ${f[i]}`}));}fs.push(frame(`The loop finishes after i reaches ${f.length}. Final array: [${f.join(', ')}].`,{array:f},{pointerLabel:'ARRAY CREATED'}));}
 else if(op==='insertion'){const p=Number(raw.index),v=Number(raw.value);fs.push(frame(`Target index ${p} is selected. The existing array is [${a.join(', ')}].`,{array:a},{pointer:p,pointerLabel:`TARGET INDEX ${p}`}));let s=a.slice();s.push('');for(let i=a.length-1;i>=p;i--){s[i+1]=s[i];s[i]='';fs.push(frame(`Move ${a[i]} from index ${i} to index ${i+1}. This shift creates room at index ${i}.`,{array:s},{highlight:[i,i+1],pointer:i,pointerLabel:`SHIFT ${a[i]} → ${i+1}`}));}s[p]=v;fs.push(frame(`Write the new value ${v} into the open slot at index ${p}.`,{array:s},{highlight:[p],pointer:p,pointerLabel:'INSERT'}));fs.push(frame(`Insertion is complete.`,{array:f},{highlight:[p],pointerLabel:'FINAL ARRAY'}));}
 else if(op==='deletion'){const p=Number(raw.index);fs.push(frame(`Select ${a[p]} at index ${p} for deletion.`,{array:a},{highlight:[p],pointer:p,pointerLabel:'DELETE'}));let s=a.slice();for(let i=p;i<a.length-1;i++){s[i]=s[i+1];fs.push(frame(`Copy ${a[i+1]} from index ${i+1} to index ${i} to close the gap.`,{array:s},{highlight:[i,i+1],pointer:i,pointerLabel:'SHIFT LEFT'}));}s.pop();fs.push(frame(`Remove the extra final slot.`,{array:s},{pointerLabel:'RESIZE'}));fs.push(frame(`Deletion is complete.`,{array:f},{pointerLabel:'FINAL ARRAY'}));}
 else if(op.includes('linear search')){for(let i=0;i<a.length;i++){fs.push(frame(`Compare target ${raw.value} with value ${a[i]} at index ${i}.`,{array:a},{highlight:[i],pointer:i,pointerLabel:`CHECK index ${i}`}));if(a[i]===Number(raw.value)){fs.push(frame(`Match found: ${raw.value} is stored at index ${i}. Stop.`,{array:a},{highlight:[i],pointer:i,pointerLabel:'FOUND'}));break}}if(!a.includes(Number(raw.value)))fs.push(frame(`All indices were checked. ${raw.value} is not present.`,{array:a},{pointerLabel:'NOT FOUND'}));}
 else if(op.includes('binary search')){const x=a.slice().sort((x,y)=>x-y);let l=0,h=x.length-1;fs.push(frame(`Binary search uses sorted data: [${x.join(', ')}]. LEFT = 0 and RIGHT = ${h}.`,{array:x},{pointerLabel:'SEARCH RANGE'}));while(l<=h){const m=Math.floor((l+h)/2);fs.push(frame(`Calculate MID = floor((${l}+${h})/2) = ${m}. Compare ${x[m]} with target ${raw.value}.`,{array:x},{highlight:[m],pointer:m,pointerLabel:`MID = ${m}`}));if(x[m]===Number(raw.value)){fs.push(frame(`The middle value matches ${raw.value}. Search succeeds.`,{array:x},{highlight:[m],pointer:m,pointerLabel:'FOUND'}));break}if(x[m]<Number(raw.value))l=m+1;else h=m-1}if(!x.includes(Number(raw.value)))fs.push(frame(`No search range remains. Target is not found.`,{array:x},{pointerLabel:'NOT FOUND'}));}
-else if(op.includes('sort')){let s=a.slice();if(op.includes('bubble')){for(let p=0;p<s.length-1;p++)for(let j=0;j<s.length-p-1;j++){fs.push(frame(`Pass ${p+1}: compare adjacent values ${s[j]} and ${s[j+1]}.`,{array:s},{highlight:[j,j+1],pointer:j,pointerLabel:'COMPARE'}));if(s[j]>s[j+1]){[s[j],s[j+1]]=[s[j+1],s[j]];fs.push(frame(`They are out of order, so swap them.`,{array:s},{highlight:[j,j+1],pointer:j,pointerLabel:'SWAP'}));}}}else if(op.includes('selection')){for(let i=0;i<s.length-1;i++){let m=i;fs.push(frame(`Start position ${i}. Assume ${s[i]} is the smallest remaining value.`,{array:s},{highlight:[i],pointer:i,pointerLabel:'CURRENT MINIMUM'}));for(let j=i+1;j<s.length;j++){fs.push(frame(`Compare candidate ${s[j]} at index ${j} with current minimum ${s[m]}.`,{array:s},{highlight:[m,j],pointer:j,pointerLabel:'COMPARE'}));if(s[j]<s[m])m=j}if(m!==i){[s[i],s[m]]=[s[m],s[i]];fs.push(frame(`Place the smallest value ${s[i]} into sorted position ${i}.`,{array:s},{highlight:[i],pointer:i,pointerLabel:'PLACE MINIMUM'}));}}}else{for(let i=1;i<s.length;i++){const key=s[i];let j=i-1;fs.push(frame(`Take ${key} as the KEY. The left portion is already sorted.`,{array:s},{highlight:[i],pointer:i,pointerLabel:`KEY = ${key}`}));while(j>=0&&s[j]>key){s[j+1]=s[j];fs.push(frame(`Shift ${s[j]} one position right because it is greater than KEY ${key}.`,{array:s},{highlight:[j,j+1],pointer:j,pointerLabel:'SHIFT'}));j--}s[j+1]=key;fs.push(frame(`Insert KEY ${key} at index ${j+1}.`,{array:s},{highlight:[j+1],pointer:j+1,pointerLabel:'INSERT KEY'}));}}fs.push(frame(`Sorting is complete. FINAL ARRAY = [${f.join(', ')}].`,{array:f},{pointerLabel:'FINAL SORTED ARRAY'}));}return fs}
+else if(op.includes('sort')){
+let s=a.slice();
+
+if (op.includes('merge')) {
+
+    function mergeSortVisual(left, right) {
+        if (left >= right) return;
+
+        const mid = Math.floor((left + right) / 2);
+
+        // Show the division of the array
+        fs.push(frame(
+            `Divide array into two halves: indexes ${left} to ${mid} and ${mid + 1} to ${right}.`,
+            { array: s.slice() },
+            {
+                highlight: Array.from(
+                    { length: right - left + 1 },
+                    (_, i) => left + i
+                ),
+                pointerLabel: 'DIVIDE'
+            }
+        ));
+
+        mergeSortVisual(left, mid);
+        mergeSortVisual(mid + 1, right);
+
+        const L = s.slice(left, mid + 1);
+        const R = s.slice(mid + 1, right + 1);
+
+        let i = 0, j = 0, k = left;
+
+        // Compare and merge
+        while (i < L.length && j < R.length) {
+
+            fs.push(frame(
+                `Compare ${L[i]} and ${R[j]}.`,
+                { array: s.slice() },
+                {
+                    highlight: [left + i, mid + 1 + j],
+                    pointerLabel: 'COMPARE'
+                }
+            ));
+
+            if (L[i] <= R[j]) {
+                s[k] = L[i++];
+            } else {
+                s[k] = R[j++];
+            }
+
+            fs.push(frame(
+                `Place ${s[k]} at position ${k}.`,
+                { array: s.slice() },
+                {
+                    highlight: [k],
+                    pointerLabel: 'PLACE'
+                }
+            ));
+
+            k++;
+        }
+
+        // Copy remaining values
+        while (i < L.length) {
+            s[k] = L[i++];
+
+            fs.push(frame(
+                `Copy remaining value ${s[k]}.`,
+                { array: s.slice() },
+                {
+                    highlight: [k],
+                    pointerLabel: 'COPY'
+                }
+            ));
+
+            k++;
+        }
+
+        while (j < R.length) {
+            s[k] = R[j++];
+
+            fs.push(frame(
+                `Copy remaining value ${s[k]}.`,
+                { array: s.slice() },
+                {
+                    highlight: [k],
+                    pointerLabel: 'COPY'
+                }
+            ));
+
+            k++;
+        }
+
+        fs.push(frame(
+            `The section from index ${left} to ${right} is sorted.`,
+            { array: s.slice() },
+            {
+                highlight: Array.from(
+                    { length: right - left + 1 },
+                    (_, i) => left + i
+                ),
+                pointerLabel: 'MERGED'
+            }
+        ));
+    }
+
+    fs.push(frame(
+        'Starting Merge Sort.',
+        { array: s.slice() },
+        { pointerLabel: 'START' }
+    ));
+
+    mergeSortVisual(0, s.length - 1);
+    fs.push(frame(
+    `Merge Sort completed. Final array: [${s.join(', ')}].`,
+    { array: s.slice() },
+    { pointerLabel: 'FINAL SORTED ARRAY' }
+));
+    return fs;
+}
+
+if (op.includes('quick')) {
+
+    function quickSortVisual(low, high) {
+
+        if (low >= high) return;
+
+        const pivot = s[high];
+
+        fs.push(frame(
+            `Select ${pivot} as the pivot.`,
+            { array: s.slice() },
+            {
+                highlight: [high],
+                pointerLabel: 'PIVOT'
+            }
+        ));
+
+        let i = low - 1;
+
+        for (let j = low; j < high; j++) {
+
+            fs.push(frame(
+                `Compare ${s[j]} with pivot ${pivot}.`,
+                { array: s.slice() },
+                {
+                    highlight: [j, high],
+                    pointerLabel: 'COMPARE'
+                }
+            ));
+
+            if (s[j] <= pivot) {
+                i++;
+
+                if (i !== j) {
+                    [s[i], s[j]] = [s[j], s[i]];
+
+                    fs.push(frame(
+                        `Swap ${s[j]} and ${s[i]}.`,
+                        { array: s.slice() },
+                        {
+                            highlight: [i, j],
+                            pointerLabel: 'SWAP'
+                        }
+                    ));
+                }
+            }
+        }
+
+        const pivotIndex = i + 1;
+
+        [s[pivotIndex], s[high]] =
+            [s[high], s[pivotIndex]];
+
+        fs.push(frame(
+            `Place pivot ${pivot} in its correct position.`,
+            { array: s.slice() },
+            {
+                highlight: [pivotIndex],
+                pointerLabel: 'PIVOT PLACED'
+            }
+        ));
+
+        quickSortVisual(low, pivotIndex - 1);
+        quickSortVisual(pivotIndex + 1, high);
+    }
+
+    fs.push(frame(
+        'Starting Quick Sort.',
+        { array: s.slice() },
+        { pointerLabel: 'START' }
+    ));
+
+    quickSortVisual(0, s.length - 1);
+    fs.push(frame(
+    `Quick Sort completed. Final array: [${s.join(', ')}].`,
+    { array: s.slice() },
+    { pointerLabel: 'FINAL SORTED ARRAY' }
+    ));
+    return fs;
+}
+
+if(op.includes('bubble')){for(let p=0;p<s.length-1;p++)for(let j=0;j<s.length-p-1;j++){fs.push(frame(`Pass ${p+1}: compare adjacent values ${s[j]} and ${s[j+1]}.`,{array:s},{highlight:[j,j+1],pointer:j,pointerLabel:'COMPARE'}));if(s[j]>s[j+1]){[s[j],s[j+1]]=[s[j+1],s[j]];fs.push(frame(`They are out of order, so swap them.`,{array:s},{highlight:[j,j+1],pointer:j,pointerLabel:'SWAP'}));}}}else if(op.includes('selection')){for(let i=0;i<s.length-1;i++){let m=i;fs.push(frame(`Start position ${i}. Assume ${s[i]} is the smallest remaining value.`,{array:s},{highlight:[i],pointer:i,pointerLabel:'CURRENT MINIMUM'}));for(let j=i+1;j<s.length;j++){fs.push(frame(`Compare candidate ${s[j]} at index ${j} with current minimum ${s[m]}.`,{array:s},{highlight:[m,j],pointer:j,pointerLabel:'COMPARE'}));if(s[j]<s[m])m=j}if(m!==i){[s[i],s[m]]=[s[m],s[i]];fs.push(frame(`Place the smallest value ${s[i]} into sorted position ${i}.`,{array:s},{highlight:[i],pointer:i,pointerLabel:'PLACE MINIMUM'}));}}}else{for(let i=1;i<s.length;i++){const key=s[i];let j=i-1;fs.push(frame(`Take ${key} as the KEY. The left portion is already sorted.`,{array:s},{highlight:[i],pointer:i,pointerLabel:`KEY = ${key}`}));while(j>=0&&s[j]>key){s[j+1]=s[j];fs.push(frame(`Shift ${s[j]} one position right because it is greater than KEY ${key}.`,{array:s},{highlight:[j,j+1],pointer:j,pointerLabel:'SHIFT'}));j--}s[j+1]=key;fs.push(frame(`Insert KEY ${key} at index ${j+1}.`,{array:s},{highlight:[j+1],pointer:j+1,pointerLabel:'INSERT KEY'}));}}fs.push(frame(`Sorting is complete. FINAL ARRAY = [${f.join(', ')}].`,{array:f},{pointerLabel:'FINAL SORTED ARRAY'}));}return fs}
 function genericFrames(module,d,before,after,raw){
 
     if(['array','searching','sorting'].includes(module))
