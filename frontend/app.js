@@ -279,7 +279,169 @@ function dlistVis(a,hl=[],label='',pi=-1){
 }
 function stackVis(a,hl=-1,label=''){count(a.length);if(!a.length){$('visualArea').innerHTML='<div class="empty"><div class="big">▤</div><b>Stack is empty.</b><div style="margin-top:6px">Use <b>Push</b> to add the first element.</div></div>';return}const top=a.length-1;$('visualArea').innerHTML=`<div class="stack-stage"><div class="stack-label">TOP ↓</div><div class="stack-board"><div class="pointer-label">${esc(label||'LIFO: Last In, First Out')}</div><div class="stack-vis">${a.slice().reverse().map((v,r)=>{const i=a.length-1-r;return`<div class="stack-node ${i===hl?'hl':''} ${i===top?'top-node':''}" data-inspect-index="${i}" tabindex="0" title="Click stack position ${i} to inspect"><span class="stack-value">${esc(v)}</span><small>${i===top?'TOP':''}</small></div>`}).join('')}</div><div class="stack-bottom">BOTTOM</div></div></div>`}
 function queueVis(a,hl=-1,label=''){count(a.length);$('visualArea').innerHTML=a.length?`<div class="queue-stage"><div class="pointer-label">${esc(label||'FIFO: First In, First Out')}</div><div class="queue-vis">${a.map((v,i)=>`<div class="queue-cell ${i===hl?'hl':''}" data-inspect-index="${i}" tabindex="0" title="Click queue position ${i} to inspect"><span class="queue-ptr">${i===0?'FRONT':i===a.length-1?'REAR':''}</span><div class="queue-node">${esc(v)}</div><div class="idx">${i}</div></div>`).join('')}</div></div>`:'<div class="empty"><div class="big">⇄</div>Queue is empty.</div>'}
-function treeVis(nodes,hl=[],label=''){count(nodes.length);if(!nodes.length){$('visualArea').innerHTML='<div class="empty"><div class="big">◇</div>Tree is empty. Insert nodes to begin.</div>';return}const by=new Map(nodes.map(n=>[n.id,n])),children=new Set(nodes.flatMap(n=>[n.left,n.right]).filter(Boolean)),root=nodes.find(n=>!children.has(n.id))||nodes[0],levels=[];function walk(n,d){if(!n)return;(levels[d]??=[]).push(n);walk(by.get(n.left),d+1);walk(by.get(n.right),d+1)}walk(root,0);$('visualArea').innerHTML=`<div class="tree-stage">${label?`<div class="pointer-label">${esc(label)}</div>`:''}${levels.map((lv,d)=>`<div class="tree-level"><span class="level-label">LEVEL ${d}</span>${lv.map(n=>`<div class="tree-node ${hl.includes(n.value)?'hl':''}" data-inspect-index="${esc(n.value)}" tabindex="0" title="Click node ${esc(n.value)} to inspect"><span>${esc(n.value)}</span><small>${n.left?'L ':''}${n.right?'R':''}</small></div>`).join('')}</div>`).join('')}</div>`}
+
+function treeVis(nodes,hl=[],label=''){
+    count(nodes.length);
+
+    if(!nodes.length){
+        $('visualArea').innerHTML =
+            '<div class="empty"><div class="big">◇</div>Tree is empty. Insert nodes to begin.</div>';
+        return;
+    }
+
+    const by = new Map(nodes.map(n => [n.id,n]));
+
+    const children = new Set(
+        nodes.flatMap(n => [n.left,n.right])
+             .filter(id => id !== null && id !== undefined)
+    );
+
+    const root = nodes.find(n => !children.has(n.id)) || nodes[0];
+
+    const positions = new Map();
+    let order = 0;
+    let maxDepth = 0;
+
+// Fixed and centered tree layout
+const LEVEL_GAP = 105;
+const HORIZONTAL_GAP = 50;
+
+let minX = Infinity;
+let maxX = -Infinity;
+
+function layout(node, depth, x, spread) {
+    if (!node) return;
+
+    maxDepth = Math.max(maxDepth, depth);
+
+    positions.set(node.id, {
+        x: x,
+        y: 65 + depth * LEVEL_GAP
+    });
+
+    minX = Math.min(minX, x);
+    maxX = Math.max(maxX, x);
+
+    layout(
+        by.get(node.left),
+        depth + 1,
+        x - spread,
+        spread / 2
+    );
+
+    layout(
+        by.get(node.right),
+        depth + 1,
+        x + spread,
+        spread / 2
+    );
+}
+
+// Start at zero; center the finished layout afterwards.
+
+layout(root, 0, 600, HORIZONTAL_GAP * 2);
+
+const TREE_PADDING = 80;
+const width = Math.max(360, maxX - minX + TREE_PADDING * 2);
+const height = Math.max(150, (maxDepth + 1) * LEVEL_GAP + 35);
+
+// Shift all nodes so the tree is centered in its drawing area.
+positions.forEach(p => {
+    p.x = p.x - minX + TREE_PADDING;
+});
+
+    const edges = [];
+
+    nodes.forEach(parent => {
+        const p = positions.get(parent.id);
+        if(!p) return;
+
+        [parent.left,parent.right].forEach((childId,index) => {
+            if(childId === null || childId === undefined) return;
+
+            const c = positions.get(childId);
+            if(!c) return;
+
+            edges.push(`
+                <line
+                    x1="${p.x}"
+                    y1="${p.y+19}"
+                    x2="${c.x}"
+                    y2="${c.y-22}"
+                    stroke="#64748b"
+                    stroke-width="2.5"
+                    marker-end="url(#treeArrow)"
+                />
+            `);
+        });
+    });
+
+    const nodeElements = nodes.map(n => {
+        const p = positions.get(n.id);
+        if(!p) return '';
+
+        return `
+            <div
+                class="tree-node ${hl.includes(n.value)?'hl':''}"
+                data-inspect-index="${esc(n.value)}"
+                tabindex="0"
+                title="Click node ${esc(n.value)} to inspect"
+                style="
+                    position:absolute;
+                    left:${p.x}px;
+                    top:${p.y}px;
+                    transform:translate(-50%,-50%);
+                    z-index:2;
+                "
+            >
+                <span>${esc(n.value)}</span>
+                <small>${n.left!==null && n.left!==undefined?'L ':''}${n.right!==null && n.right!==undefined?'R':''}</small>
+            </div>
+        `;
+    }).join('');
+
+    $('visualArea').innerHTML = `
+        <div class="tree-stage" style="overflow-x:auto;">
+            ${label?`<div class="pointer-label">${esc(label)}</div>`:''}
+
+            <div style="
+                position:relative;
+                width:${width}px;
+                height:${height}px;
+                margin:20px auto;
+            ">
+
+                <svg
+                    width="${width}"
+                    height="${height}"
+                    viewBox="0 0 ${width} ${height}"
+                    style="position:absolute;inset:0;z-index:1;overflow:visible;"
+                >
+                    <defs>
+                        <marker
+                            id="treeArrow"
+                            markerWidth="10"
+                            markerHeight="10"
+                            refX="7"
+                            refY="3"
+                            orient="auto"
+                            markerUnits="strokeWidth"
+                        >
+                            <path
+                                d="M0,0 L0,6 L8,3 z"
+                                fill="#64748b"
+                            />
+                        </marker>
+                    </defs>
+
+                    ${edges.join('')}
+                </svg>
+
+                ${nodeElements}
+            </div>
+        </div>
+    `;
+}
 function graphVis(g,hl=[],label=''){count(g.nodes.length);if(!g.nodes.length){$('visualArea').innerHTML='<div class="empty"><div class="big">◈</div>Add vertices to build the graph.</div>';return}const n=g.nodes.length,pts=g.nodes.map((v,i)=>({x:50+37*Math.cos(2*Math.PI*i/n-Math.PI/2),y:50+37*Math.sin(2*Math.PI*i/n-Math.PI/2)}));let svg='<svg class="graph-svg" viewBox="0 0 600 280">';g.edges.forEach(e=>{const a=g.nodes.indexOf(e[0]),b=g.nodes.indexOf(e[1]);if(a>=0&&b>=0){const A=pts[a],B=pts[b];svg+=`<line x1="${A.x*6}" y1="${A.y*2.8}" x2="${B.x*6}" y2="${B.y*2.8}" class="graph-edge-svg"/>`}});g.nodes.forEach((v,i)=>{const p=pts[i];svg+=`<g class="graph-svg-node ${hl.includes(v)?'selected':''}"><circle cx="${p.x*6}" cy="${p.y*2.8}" r="24"/><text x="${p.x*6}" y="${p.y*2.8+5}" text-anchor="middle">${esc(v)}</text></g>`});svg+='</svg>';$('visualArea').innerHTML=`<div class="graph-stage">${label?`<div class="pointer-label">${esc(label)}</div>`:''}${svg}<div class="edge-list">${g.edges.map(e=>`<span>${esc(e[0])} ↔ ${esc(e[1])}</span>`).join('')||'No edges yet'}</div></div>`}
 function hashVis(b,hl=-1,label=''){count(b.reduce((n,x)=>n+x.length,0));$('visualArea').innerHTML=`<div class="hash-grid">${b.map((x,i)=>`<div class="bucket ${i===hl?'hl':''}"><b>Bucket ${i}</b><div>${x.length?x.map(esc).join(' → '):'—'}</div></div>`).join('')}</div>${label?`<div class="pointer-label hash-label">${esc(label)}</div>`:''}`}
 function inputs(){
