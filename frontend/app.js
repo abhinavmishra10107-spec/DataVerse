@@ -875,11 +875,14 @@ function genericFrames(module,d,before,after,raw){
     const fs=[];
 
     const a =
-        module === 'linked-list'
-            ? (after.linked || before.linked || [])
-            : module === 'doubly-linked-list'
-                ? (after.dlinked || before.dlinked || [])
-                : (after.array || before.array || []);if(module === 'linked-list'){
+    module === 'linked-list'
+        ? (after.linked || before.linked || [])
+        : module === 'doubly-linked-list'
+            ? (after.dlinked || before.dlinked || [])
+            : module === 'queue'
+                ? (after.queue || after.array || before.queue || before.array || [])
+                : (after.array || before.array || []);
+            if(module === 'linked-list'){
 
     const beforeList =
         before.linked || before.array || [];
