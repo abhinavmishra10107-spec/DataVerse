@@ -1686,7 +1686,135 @@ function genericFrames(module,d,before,after,raw){
     );
 
     return fs;
-}if(moduleName==='doubly-linked-list'){if(d.operation==='Create Doubly Linked List'){fs.push(frame('HEAD points to node 0. PREV = NULL and NEXT points forward to node 1.',{array:a},{pointerIndex:0,pointerLabel:'HEAD → node 0'}));a.forEach((v,i)=>fs.push(frame(i===0?`Node 0: DATA = ${v}. PREV = NULL. NEXT points to node 1.`:i===a.length-1?`Node ${i}: DATA = ${v}. PREV points to node ${i-1}. NEXT = NULL.`:`Node ${i}: DATA = ${v}. PREV → node ${i-1}, NEXT → node ${i+1}.`,{array:a},{highlight:[i],pointerIndex:i,pointerLabel:`NODE ${i}`})));fs.push(frame(`The list can be traversed forward ${a.join(' → ')} and backward ${a.slice().reverse().join(' → ')}.`,{array:a},{pointerLabel:'TWO-WAY TRAVERSAL'}));}else a.forEach((v,i)=>fs.push(frame(`Node ${i}: DATA = ${v}. PREV ${i?'→ node '+(i-1):'= NULL'}; NEXT ${i<a.length-1?'→ node '+(i+1):'= NULL'}.`,{array:a},{highlight:[i],pointerIndex:i,pointerLabel:`NODE ${i}`})));if(!fs.length)fs.push(frame(d.message,{array:a}));return fs}if(moduleName==='stack'){const b=before.array||before.stack||[];const f=after.array||after.stack||[];const action=(d.operation||'').toLowerCase();if(action.includes('push')){const v=f[f.length-1];fs.push(frame(`Before PUSH, the stack is [${b.join(', ')}]. TOP is ${b.length?b[b.length-1]:'empty'}.`,{array:b},{pointerLabel:'BEFORE PUSH'}));fs.push(frame(`Create a new element containing ${v} and place it above the current TOP.`,{array:b.concat([v])},{highlight:[f.length-1],pointerLabel:'NEW ELEMENT'}));fs.push(frame(`Update TOP to point to ${v}. The resultant stack is [${f.join(', ')}].`,{array:f},{highlight:[f.length-1],pointerLabel:'TOP → '+v}));}else if(action.includes('pop')){const removed=b[b.length-1];fs.push(frame(`Before POP, TOP points to ${removed}.`,{array:b},{highlight:[b.length-1],pointerLabel:'TOP → '+removed}));fs.push(frame(`Remove the element ${removed} from TOP.`,{array:b.slice(0,-1)},{pointerLabel:'REMOVE TOP'}));fs.push(frame(`Move TOP to ${f.length?f[f.length-1]:'empty'}. Resultant stack: [${f.join(', ')}].`,{array:f},{highlight:f.length?[f.length-1]:[],pointerLabel:f.length?'TOP → '+f[f.length-1]:'STACK EMPTY'}));}else if(action.includes('peek')){fs.push(frame(`PEEK reads the current TOP without removing anything.`,{array:f},{highlight:[f.length-1],pointerLabel:'PEEK'}));fs.push(frame(`TOP = ${f[f.length-1]}. The stack remains unchanged: [${f.join(', ')}].`,{array:f},{highlight:[f.length-1],pointerLabel:'TOP → '+f[f.length-1]}));}else{fs.push(frame(`Display reads the stack from BOTTOM to TOP.`,{array:f},{pointerLabel:'DISPLAY'}));f.forEach((v,i)=>fs.push(frame(`Position ${i} contains ${v}${i===f.length-1?' and TOP points here.':'.'}`,{array:f},{highlight:[i],pointerLabel:i===f.length-1?'TOP':'POSITION '+i})));}if(!fs.length)fs.push(frame(d.message,{array:f}));return fs}if(moduleName==='queue'){a.forEach((v,i)=>fs.push(frame(`Queue position ${i} stores ${v}. ${i===0?'FRONT points here.':i===a.length-1?'REAR points here.':''}`,{array:a},{highlight:[i],pointerLabel:i===0?'FRONT':i===a.length-1?'REAR':'QUEUE'})));if(!fs.length)fs.push(frame(d.message,{array:a}));return fs}if(moduleName==='tree'){const n=after.nodes||[];(d.steps||[]).forEach((s,i)=>fs.push(frame(s,{nodes:n},{highlight:[],pointerLabel:`TREE STEP ${i+1}`})));fs.push(frame(d.message,{nodes:n},{highlight:d.highlight||[],pointerLabel:'FINAL TREE'}));return fs}if(moduleName==='graph'){(d.steps||[]).forEach((s,i)=>fs.push(frame(s,{graph:after.graph},{highlight:(d.highlight||[]).slice(0,Math.max(1,i+1)),pointerLabel:`GRAPH STEP ${i+1}`})));return fs}if(moduleName==='hashing'){const b=after.buckets||state.hash;for(let i=0;i<10;i++)fs.push(frame(`Inspect bucket ${i}. ${b[i].length?`It contains ${b[i].join(' → ')}.`:'It is empty.'}`,{buckets:b},{highlight:i,pointerLabel:`BUCKET ${i}`}));return fs}return [frame(d.message,after)]}
+}if(moduleName==='doubly-linked-list'){if(d.operation==='Create Doubly Linked List'){fs.push(frame('HEAD points to node 0. PREV = NULL and NEXT points forward to node 1.',{array:a},{pointerIndex:0,pointerLabel:'HEAD → node 0'}));a.forEach((v,i)=>fs.push(frame(i===0?`Node 0: DATA = ${v}. PREV = NULL. NEXT points to node 1.`:i===a.length-1?`Node ${i}: DATA = ${v}. PREV points to node ${i-1}. NEXT = NULL.`:`Node ${i}: DATA = ${v}. PREV → node ${i-1}, NEXT → node ${i+1}.`,{array:a},{highlight:[i],pointerIndex:i,pointerLabel:`NODE ${i}`})));fs.push(frame(`The list can be traversed forward ${a.join(' → ')} and backward ${a.slice().reverse().join(' → ')}.`,{array:a},{pointerLabel:'TWO-WAY TRAVERSAL'}));}else a.forEach((v,i)=>fs.push(frame(`Node ${i}: DATA = ${v}. PREV ${i?'→ node '+(i-1):'= NULL'}; NEXT ${i<a.length-1?'→ node '+(i+1):'= NULL'}.`,{array:a},{highlight:[i],pointerIndex:i,pointerLabel:`NODE ${i}`})));if(!fs.length)fs.push(frame(d.message,{array:a}));return fs}if(moduleName==='stack'){const b=before.array||before.stack||[];const f=d.array||after.array||after.stack||[];const action=(d.operation||'').toLowerCase();if(action.includes('push')){const v=f[f.length-1];fs.push(frame(`Before PUSH, the stack is [${b.join(', ')}]. TOP is ${b.length?b[b.length-1]:'empty'}.`,{array:b},{pointerLabel:'BEFORE PUSH'}));fs.push(frame(`Create a new element containing ${v} and place it above the current TOP.`,{array:b.concat([v])},{highlight:[f.length-1],pointerLabel:'NEW ELEMENT'}));fs.push(frame(`Update TOP to point to ${v}. The resultant stack is [${f.join(', ')}].`,{array:f},{highlight:[f.length-1],pointerLabel:'TOP → '+v}));}else if(action.includes('pop')){const removed=b[b.length-1];fs.push(frame(`Before POP, TOP points to ${removed}.`,{array:b},{highlight:[b.length-1],pointerLabel:'TOP → '+removed}));fs.push(frame(`Remove the element ${removed} from TOP.`,{array:b.slice(0,-1)},{pointerLabel:'REMOVE TOP'}));fs.push(frame(`Move TOP to ${f.length?f[f.length-1]:'empty'}. Resultant stack: [${f.join(', ')}].`,{array:f},{highlight:f.length?[f.length-1]:[],pointerLabel:f.length?'TOP → '+f[f.length-1]:'STACK EMPTY'}));}else if(action.includes('peek')){fs.push(frame(`PEEK reads the current TOP without removing anything.`,{array:f},{highlight:[f.length-1],pointerLabel:'PEEK'}));fs.push(frame(`TOP = ${f[f.length-1]}. The stack remains unchanged: [${f.join(', ')}].`,{array:f},{highlight:[f.length-1],pointerLabel:'TOP → '+f[f.length-1]}));}else{fs.push(frame(`Display reads the stack from BOTTOM to TOP.`,{array:f},{pointerLabel:'DISPLAY'}));f.forEach((v,i)=>fs.push(frame(`Position ${i} contains ${v}${i===f.length-1?' and TOP points here.':'.'}`,{array:f},{highlight:[i],pointerLabel:i===f.length-1?'TOP':'POSITION '+i})));}if(!fs.length)fs.push(frame(d.message,{array:f}));return fs}if(moduleName==='queue'){a.forEach((v,i)=>fs.push(frame(`Queue position ${i} stores ${v}. ${i===0?'FRONT points here.':i===a.length-1?'REAR points here.':''}`,{array:a},{highlight:[i],pointerLabel:i===0?'FRONT':i===a.length-1?'REAR':'QUEUE'})));if(!fs.length)fs.push(frame(d.message,{array:a}));return fs}
+if(moduleName==='tree'){
+
+    const oldNodes = before.tree || [];
+    const finalNodes = d.nodes || after.tree || oldNodes;
+
+    const oldIds = new Set(oldNodes.map(n => n.id));
+
+    const newNode = finalNodes.find(n => !oldIds.has(n.id));
+
+    const byId = new Map(finalNodes.map(n => [n.id,n]));
+
+    // Find the root node.
+    const childIds = new Set(
+        finalNodes.flatMap(n => [n.left,n.right])
+                  .filter(id => id !== null && id !== undefined)
+    );
+
+    const root = finalNodes.find(n => !childIds.has(n.id));
+
+    // Animate insertion progressively.
+    if(
+        (d.operation || '').toLowerCase().includes('insertion') &&
+        newNode &&
+        root
+    ){
+
+        const parent = finalNodes.find(
+            n => n.left === newNode.id || n.right === newNode.id
+        );
+
+        fs.push(frame(
+            'Start at the ROOT of the Binary Search Tree.',
+            {nodes:oldNodes},
+            {
+                highlight:[root.value],
+                pointerLabel:'ROOT'
+            }
+        ));
+
+        let current = root;
+
+        while(current && parent && current.id !== parent.id){
+
+            fs.push(frame(
+                `Compare ${newNode.value} with ${current.value}.`,
+                {nodes:oldNodes},
+                {
+                    highlight:[current.value],
+                    pointerLabel:`CURRENT → ${current.value}`
+                }
+            ));
+
+            const goLeft = newNode.value < current.value;
+
+            fs.push(frame(
+                goLeft
+                    ? `${newNode.value} is smaller. Move to the LEFT child.`
+                    : `${newNode.value} is greater. Move to the RIGHT child.`,
+                {nodes:oldNodes},
+                {
+                    highlight:[current.value],
+                    pointerLabel:goLeft?'MOVE LEFT':'MOVE RIGHT'
+                }
+            ));
+
+            const nextId = goLeft ? current.left : current.right;
+            current = byId.get(nextId);
+        }
+
+        if(parent){
+
+            const isLeft = parent.left === newNode.id;
+
+            fs.push(frame(
+                `The correct position is found. ${newNode.value} will be the ${isLeft?'LEFT':'RIGHT'} child of ${parent.value}.`,
+                {nodes:oldNodes},
+                {
+                    highlight:[parent.value],
+                    pointerLabel:'PARENT FOUND'
+                }
+            ));
+
+            fs.push(frame(
+                `Connect ${newNode.value} as the ${isLeft?'LEFT':'RIGHT'} child of ${parent.value}. The connecting arrow appears.`,
+                {nodes:finalNodes},
+                {
+                    highlight:[parent.value,newNode.value],
+                    pointerLabel:'NEW NODE CONNECTED'
+                }
+            ));
+        }
+
+        fs.push(frame(
+            `Insertion complete. ${newNode.value} is now part of the Binary Search Tree.`,
+            {nodes:finalNodes},
+            {
+                highlight:[newNode.value],
+                pointerLabel:'FINAL TREE'
+            }
+        ));
+
+        return fs;
+    }
+
+    // Keep normal tree animations for other operations.
+    (d.steps||[]).forEach((s,i)=>{
+        fs.push(frame(
+            s,
+            {nodes:finalNodes},
+            {
+                highlight:[],
+                pointerLabel:`TREE STEP ${i+1}`
+            }
+        ));
+    });
+
+    fs.push(frame(
+        d.message,
+        {nodes:finalNodes},
+        {
+            highlight:d.highlight||[],
+            pointerLabel:'FINAL TREE'
+        }
+    ));
+
+    return fs;
+}
+if(moduleName==='graph'){(d.steps||[]).forEach((s,i)=>fs.push(frame(s,{graph:after.graph},{highlight:(d.highlight||[]).slice(0,Math.max(1,i+1)),pointerLabel:`GRAPH STEP ${i+1}`})));return fs}if(moduleName==='hashing'){const b=after.buckets||state.hash;for(let i=0;i<10;i++)fs.push(frame(`Inspect bucket ${i}. ${b[i].length?`It contains ${b[i].join(' → ')}.`:'It is empty.'}`,{buckets:b},{highlight:i,pointerLabel:`BUCKET ${i}`}));return fs}return [frame(d.message,after)]}
 function setControlsDisabled(disabled){document.querySelectorAll('#controlsArea button,#controlsArea input').forEach(el=>{el.disabled=disabled});}
 async function run(action){if(busy||switching)return;const epoch=moduleEpoch;if(moduleName==='oop'){showConcept('oop');return}if(moduleName==='dsa-concepts'){showConcept('dsa');return}if(moduleName==='notes'){renderNotes();return}const before=JSON.parse(JSON.stringify(state)),raw=inputs();busy=true;setControlsDisabled(true);try{let d;if(moduleName==='array'){if(action==='create'){let vals=[...$('controlsArea').querySelectorAll('.arr-input')].map(e=>Number(e.value));if(!vals.length)throw Error('Enter number of elements and generate input fields.');if(vals.some(Number.isNaN))throw Error('Fill every generated input field.');d=await api('/array/create',{values:vals})}else if(action==='insert')d=await api('/array/insert',{position:Number(raw.index),value:Number(raw.value)});else if(action==='delete')d=await api('/array/delete',{position:Number(raw.index)});else if(action==='search')d=await api('/array/search',{value:Number(raw.value)});else d=await api('/array/traverse')}
 else if(moduleName==='linked-list'){
