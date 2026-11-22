@@ -620,7 +620,74 @@ function setupActiveButtons() {
 }
 function controls(){let h='';if(moduleName==='oop')h=conceptControls('oop');else if(moduleName==='dsa-concepts')h=conceptControls('dsa');else if(moduleName==='notes'){h='<div class="form"><div class="help"><b>Notes & Revision:</b> Search definitions, relationships and complexity reminders. The full notes collection appears in the visualization area.</div><button class="btn primary full" type="button" onclick="renderNotes()">Open Notes</button></div>';}else if(moduleName==='array')h=`<div class="form"><div class="two"><div class="field"><label>NUMBER OF ELEMENTS</label><input id="array-n" type="number" min="1" max="30" placeholder="5"></div><button class="btn" onclick="makeArrayFields()">Generate Input Fields</button></div><div id="arrayFields" class="generated-grid"></div><button class="btn primary full" onclick="run('create')">Create Array</button><div class="two"><div class="field"><label>INDEX</label><input id="array-index" type="number" placeholder="2"></div><div class="field"><label>VALUE</label><input id="array-value" type="number" placeholder="99"></div></div><div class="btns"><button class="btn primary" onclick="run('insert')">＋ Insert</button><button class="btn danger" onclick="run('delete')">− Delete</button><button class="btn" onclick="run('search')">⌕ Search</button><button class="btn" onclick="run('traverse')">→ Traverse</button></div><div class="help">Creation follows the same logic as a C++ loop: <b>for (int i = 0; i &lt; n; i++) cin &gt;&gt; arr[i];</b></div></div>`;
 else if(moduleName==='doubly-linked-list')h=`<div class="form"><div class="field"><label>VALUES</label><input id="dlinked-values" name="dlinked_values_fresh" autocomplete="off" spellcheck="false" placeholder="10,20,30,40"></div><button class="btn primary full" onclick="run('create')">Create Doubly Linked List</button><div class="two"><div class="field"><label>POSITION</label><input id="dlinked-index" name="dlinked_index_fresh" type="number" autocomplete="off" placeholder="1"></div><div class="field"><label>VALUE</label><input id="dlinked-value" name="dlinked_value_fresh" type="number" autocomplete="off" placeholder="99"></div></div><div class="btns"><button class="btn primary" onclick="run('insert')">＋ Insert</button><button class="btn danger" onclick="run('delete')">− Delete</button><button class="btn" onclick="run('traverse')">⇄ Traverse</button><button class="btn" onclick="run('reverse')">↶ Reverse</button></div><div class="help"><b>Two-way pointers:</b> PREV moves backward and NEXT moves forward. Try clicking a node after creation.</div></div>`;
-else if(moduleName==='linked-list')h=`<div class="form"><div class="field"><label>VALUES</label><input id="linked-values"name="linked_values_${Date.now()}"autocomplete="off"spellcheck="false"value=""placeholder="10,20,30,40,50"></div><button class="btn primary full" onclick="run('create')">Create List</button><div class="two"><div class="field"><label>POSITION</label><input id="linked-index" name="linked_list_index_fresh" type="number" autocomplete="off" placeholder="1"></div><div class="field"><label>VALUE</label><input id="linked-value" name="linked_list_value_fresh" type="number" autocomplete="off" placeholder="99"></div></div><div class="btns"><button class="btn primary" onclick="run('insert')">＋ Insert</button><button class="btn danger" onclick="run('delete')">− Delete</button><button class="btn" onclick="run('traverse')">→ Traverse</button><button class="btn" onclick="run('reverse')">↶ Reverse</button></div></div>`;
+
+else if(moduleName==='linked-list')h=`<div class="form">
+
+<div class="field">
+<label>VALUES</label>
+<input id="linked-values"
+name="linked_values_${Date.now()}"
+autocomplete="off"
+spellcheck="false"
+value=""
+placeholder="10,20,30,40,50">
+</div>
+
+<button class="btn primary full" onclick="run('create')">
+Create List
+</button>
+
+<div class="two">
+
+<div class="field">
+<label>POSITION</label>
+<input id="linked-index"
+name="linked_list_index_fresh"
+type="number"
+min="1"
+autocomplete="off"
+placeholder="1">
+</div>
+
+<div class="field">
+<label>VALUE</label>
+<input id="linked-value"
+name="linked_list_value_fresh"
+type="number"
+autocomplete="off"
+placeholder="20">
+</div>
+
+</div>
+
+<div class="field">
+<label>DELETE METHOD</label>
+<select id="linked-delete-mode">
+<option value="position">Delete by Position</option>
+<option value="value">Delete by Value</option>
+</select>
+</div>
+
+<div class="btns">
+
+<button class="btn primary" onclick="run('insert')">
+＋ Insert
+</button>
+
+<button class="btn danger" onclick="run('delete')">
+− Delete
+</button>
+
+<button class="btn" onclick="run('traverse')">
+→ Traverse
+</button>
+
+<button class="btn" onclick="run('reverse')">
+↶ Reverse
+</button>
+
+</div>
+</div>`;
 else if(moduleName==='stack')h=`<div class="form stack-controls"><div class="field"><label>VALUE FOR PUSH</label><input id="stack-value" name="stack_value_fresh" type="number" inputmode="numeric" autocomplete="off" placeholder="Enter value, e.g. 10" onkeydown="if(event.key==='Enter')run('push')"></div><div class="btns"><button class="btn primary" type="button" onclick="run('push')">↑ Push</button><button class="btn danger" type="button" onclick="run('pop')">↓ Pop</button><button class="btn" type="button" onclick="run('peek')">⌃ Peek</button><button class="btn" type="button" onclick="run('display')">▤ Display</button></div><div id="stackResult" class="stack-result">Choose an operation. Push needs a value; Pop, Peek and Display use the current stack.</div><div class="help"><b>One operation at a time:</b> Push adds a value at TOP, Pop removes TOP, Peek reads TOP without changing the stack, and Display shows the current stack.</div></div>`;
 else if(moduleName==='queue')h=`<div class="form"><div class="field"><label>VALUE</label><input id="queue-value" name="queue_value_fresh" type="number" autocomplete="off" placeholder="10"></div><div class="btns"><button class="btn primary" onclick="run('enqueue')">→ Enqueue</button><button class="btn danger" onclick="run('dequeue')">← Dequeue</button><button class="btn" onclick="run('front')">Front</button><button class="btn" onclick="run('display')">Display</button></div></div>`;
 else if(moduleName==='tree')h=`<div class="form"><div class="field"><label>VALUE</label><input id="tree-value" name="tree_value_fresh" type="number" autocomplete="off" placeholder="50"></div><div class="btns"><button class="btn primary" onclick="run('insert')">＋ Insert Node</button><button class="btn" onclick="run('search')">⌕ Search</button><button class="btn" onclick="run('inorder')">Inorder</button><button class="btn" onclick="run('preorder')">Preorder</button><button class="btn" onclick="run('postorder')">Postorder</button></div></div>`;
@@ -1268,8 +1335,9 @@ function genericFrames(module,d,before,after,raw){
          */
         fs.push(
             frame(
-                `Start at HEAD and find the node containing ${value}.`,
-
+meta.deletionMode === 'position'
+    ? `Start at HEAD and traverse to position ${position + 1}.`
+    : `Start at HEAD and search for the first node containing ${value}.`,
                 {array:beforeList},
 
                 {
@@ -1829,12 +1897,37 @@ else if(moduleName==='linked-list'){
         if(JSON.stringify(d.array||[])!==JSON.stringify(vals))
             throw Error('The server returned values different from your input. Please restart the backend.');
 
-    }else if(action==='delete'){
-        d=await api('/linked-list/delete',{
-            value:Number(raw.value)
+   
+}else if(action==='delete'){
+
+    const deleteMode = $('linked-delete-mode').value;
+
+    if(deleteMode === 'position'){
+
+        if(raw.index === ''){
+            throw Error('Enter the position to delete.');
+        }
+
+        d = await api('/linked-list/delete',{
+            mode: 'position',
+            position: Number(raw.index)
         });
 
     }else{
+
+        if(raw.value === ''){
+            throw Error('Enter the value to delete.');
+        }
+
+        d = await api('/linked-list/delete',{
+            mode: 'value',
+            value: Number(raw.value)
+        });
+
+    }
+
+}
+else{
         d=await api('/linked-list/'+action,{
             position:Number(raw.index),
             value:Number(raw.value)
