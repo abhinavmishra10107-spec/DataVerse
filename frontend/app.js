@@ -1937,7 +1937,97 @@ else{
 if(epoch!==moduleEpoch)return; if(['array','searching','sorting'].includes(moduleName))state.array=d.array||[];else if(moduleName==='linked-list')state.linked=d.array||[];else if(moduleName==='doubly-linked-list')state.dlinked=d.array||[];else if(moduleName==='stack')state.stack=d.array||[];else if(moduleName==='queue')state.queue=d.array||[];else if(moduleName==='tree')state.tree=d.nodes||[];else if(moduleName==='graph')state.graph=d.graph||state.graph;else state.hash=d.buckets||state.hash;
 logSteps(d.steps||[]);setComplexity(d.complexity);$('operation').textContent=d.operation||action;$('status').textContent=d.message||'Completed';if(moduleName==='stack'&&$('stackResult'))$('stackResult').innerHTML=`<b>${esc(d.message||'Completed')}</b><span>Current stack (TOP → BOTTOM): [${(d.array||[]).slice().reverse().map(esc).join(', ')||'empty'}]</span>`;operationCount++;$('opCount').textContent=operationCount;const frames=genericFrames(moduleName,d,before,state,raw);setup(frames);history.push({module:moduleName.toUpperCase(),operation:d.operation||action,input:Object.entries(raw).filter(([,v])=>v!=='').map(([k,v])=>`${k}: ${v}`).join(' | ')||'—',result:d.message||'Completed',time:d.complexity?.time||'—'});renderHistory();toast(d.message||'Completed')}catch(e){toast(e.message)}finally{busy=false;setControlsDisabled(false)}}
 function renderHistory(){$('historyCount').textContent=`${history.length} experiment${history.length===1?'':'s'}`;$('historyArea').innerHTML=history.length?`<table class="table"><thead><tr><th>#</th><th>MODULE</th><th>OPERATION</th><th>INPUT</th><th>RESULT</th><th>TIME</th></tr></thead><tbody>${history.slice().reverse().map((h,i)=>`<tr><td>${history.length-i}</td><td>${h.module}</td><td><b>${esc(h.operation)}</b></td><td>${esc(h.input)}</td><td class="ok">✓ ${esc(h.result)}</td><td>${esc(h.time)}</td></tr>`).join('')}</tbody></table>`:'<div class="log-empty">No experiments yet.</div>'}
-async function reset(){stop();operationCount=0;history=[];$('opCount').textContent='0';$('status').textContent='Ready';$('operation').textContent='Ready';setComplexity({});logSteps([]);$('animationPanel').classList.add('hidden');if(moduleName==='oop'){controls();$('visualArea').innerHTML=conceptVisual('oop','class-object');$('concept-select').value='class-object';showConcept('oop');return}if(moduleName==='dsa-concepts'){controls();$('visualArea').innerHTML=conceptVisual('dsa','big-o');$('concept-select').value='big-o';showConcept('dsa');return}if(moduleName==='notes'){controls();renderNotes();return}try{const d=await api('/'+moduleName+'/reset');if(moduleName==='array'||moduleName==='searching'||moduleName==='sorting'){state.array=d.array||[];arrayVis(state.array)}else if(moduleName==='linked-list'){state.linked=d.array||[];listVis(state.linked)}else if(moduleName==='doubly-linked-list'){state.dlinked=d.array||[];dlistVis(state.dlinked)}else if(moduleName==='stack'){state.stack=d.array||[];stackVis(state.stack);if($('stackResult'))$('stackResult').textContent='Stack reset. Choose Push, Pop, Peek or Display.'}else if(moduleName==='queue'){state.queue=d.array||[];queueVis(state.queue)}else if(moduleName==='tree'){state.tree=d.nodes||[];treeVis(state.tree)}else if(moduleName==='graph'){state.graph=d.graph||{nodes:[],edges:[]};graphVis(state.graph)}else{state.hash=d.buckets||Array.from({length:10},()=>[]);hashVis(state.hash)}renderHistory()}catch(e){toast(e.message)}}
+
+async function reset() {
+    stop();
+
+    operationCount = 0;
+    history = [];
+
+    $('opCount').textContent = '0';
+    $('status').textContent = 'Ready';
+    $('operation').textContent = 'Ready';
+
+    setComplexity({});
+    logSteps([]);
+    $('animationPanel').classList.add('hidden');
+
+    // Clear the previous module's visualization immediately.
+    $('visualArea').innerHTML =
+        '<div class="empty">Loading module...</div>';
+
+    if (moduleName === 'oop') {
+        controls();
+        $('visualArea').innerHTML = conceptVisual('oop', 'class-object');
+        $('concept-select').value = 'class-object';
+        showConcept('oop');
+        return;
+    }
+
+    if (moduleName === 'dsa-concepts') {
+        controls();
+        $('visualArea').innerHTML = conceptVisual('dsa', 'big-o');
+        $('concept-select').value = 'big-o';
+        showConcept('dsa');
+        return;
+    }
+
+    if (moduleName === 'notes') {
+        controls();
+        renderNotes();
+        return;
+    }
+
+    try {
+        const d = await api('/' + moduleName + '/reset');
+
+        if (['array', 'searching', 'sorting'].includes(moduleName)) {
+            state.array = d.array || [];
+            arrayVis(state.array);
+        }
+        else if (moduleName === 'linked-list') {
+            state.linked = d.array || [];
+            listVis(state.linked);
+        }
+        else if (moduleName === 'doubly-linked-list') {
+            state.dlinked = d.array || [];
+            dlistVis(state.dlinked);
+        }
+        else if (moduleName === 'stack') {
+            state.stack = d.array || [];
+            stackVis(state.stack);
+
+            if ($('stackResult')) {
+                $('stackResult').textContent =
+                    'Stack reset. Choose Push, Pop, Peek or Display.';
+            }
+        }
+        else if (moduleName === 'queue') {
+            state.queue = d.array || [];
+            queueVis(state.queue);
+        }
+        else if (moduleName === 'tree') {
+            state.tree = d.nodes || [];
+            treeVis(state.tree);
+        }
+        else if (moduleName === 'graph') {
+            state.graph = d.graph || { nodes: [], edges: [] };
+            graphVis(state.graph);
+        }
+        else if (moduleName === 'hashing') {
+            state.hash = d.buckets || Array.from({ length: 10 }, () => []);
+            hashVis(state.hash);
+        }
+
+        renderHistory();
+
+    } catch (e) {
+        $('visualArea').innerHTML =
+            '<div class="empty">Could not load this module. Check the backend connection.</div>';
+
+        toast(e.message);
+    }
+}
 $('visualArea').addEventListener('click',e=>{
   const node=e.target.closest('[data-inspect-index]');
   if(!node)return;
