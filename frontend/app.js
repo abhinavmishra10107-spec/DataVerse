@@ -279,7 +279,169 @@ function dlistVis(a,hl=[],label='',pi=-1){
 }
 function stackVis(a,hl=-1,label=''){count(a.length);if(!a.length){$('visualArea').innerHTML='<div class="empty"><div class="big">▤</div><b>Stack is empty.</b><div style="margin-top:6px">Use <b>Push</b> to add the first element.</div></div>';return}const top=a.length-1;$('visualArea').innerHTML=`<div class="stack-stage"><div class="stack-label">TOP ↓</div><div class="stack-board"><div class="pointer-label">${esc(label||'LIFO: Last In, First Out')}</div><div class="stack-vis">${a.slice().reverse().map((v,r)=>{const i=a.length-1-r;return`<div class="stack-node ${i===hl?'hl':''} ${i===top?'top-node':''}" data-inspect-index="${i}" tabindex="0" title="Click stack position ${i} to inspect"><span class="stack-value">${esc(v)}</span><small>${i===top?'TOP':''}</small></div>`}).join('')}</div><div class="stack-bottom">BOTTOM</div></div></div>`}
 function queueVis(a,hl=-1,label=''){count(a.length);$('visualArea').innerHTML=a.length?`<div class="queue-stage"><div class="pointer-label">${esc(label||'FIFO: First In, First Out')}</div><div class="queue-vis">${a.map((v,i)=>`<div class="queue-cell ${i===hl?'hl':''}" data-inspect-index="${i}" tabindex="0" title="Click queue position ${i} to inspect"><span class="queue-ptr">${i===0?'FRONT':i===a.length-1?'REAR':''}</span><div class="queue-node">${esc(v)}</div><div class="idx">${i}</div></div>`).join('')}</div></div>`:'<div class="empty"><div class="big">⇄</div>Queue is empty.</div>'}
-function treeVis(nodes,hl=[],label=''){count(nodes.length);if(!nodes.length){$('visualArea').innerHTML='<div class="empty"><div class="big">◇</div>Tree is empty. Insert nodes to begin.</div>';return}const by=new Map(nodes.map(n=>[n.id,n])),children=new Set(nodes.flatMap(n=>[n.left,n.right]).filter(Boolean)),root=nodes.find(n=>!children.has(n.id))||nodes[0],levels=[];function walk(n,d){if(!n)return;(levels[d]??=[]).push(n);walk(by.get(n.left),d+1);walk(by.get(n.right),d+1)}walk(root,0);$('visualArea').innerHTML=`<div class="tree-stage">${label?`<div class="pointer-label">${esc(label)}</div>`:''}${levels.map((lv,d)=>`<div class="tree-level"><span class="level-label">LEVEL ${d}</span>${lv.map(n=>`<div class="tree-node ${hl.includes(n.value)?'hl':''}" data-inspect-index="${esc(n.value)}" tabindex="0" title="Click node ${esc(n.value)} to inspect"><span>${esc(n.value)}</span><small>${n.left?'L ':''}${n.right?'R':''}</small></div>`).join('')}</div>`).join('')}</div>`}
+
+function treeVis(nodes,hl=[],label=''){
+    count(nodes.length);
+
+    if(!nodes.length){
+        $('visualArea').innerHTML =
+            '<div class="empty"><div class="big">◇</div>Tree is empty. Insert nodes to begin.</div>';
+        return;
+    }
+
+    const by = new Map(nodes.map(n => [n.id,n]));
+
+    const children = new Set(
+        nodes.flatMap(n => [n.left,n.right])
+             .filter(id => id !== null && id !== undefined)
+    );
+
+    const root = nodes.find(n => !children.has(n.id)) || nodes[0];
+
+    const positions = new Map();
+    let order = 0;
+    let maxDepth = 0;
+
+// Fixed and centered tree layout
+const LEVEL_GAP = 105;
+const HORIZONTAL_GAP = 50;
+
+let minX = Infinity;
+let maxX = -Infinity;
+
+function layout(node, depth, x, spread) {
+    if (!node) return;
+
+    maxDepth = Math.max(maxDepth, depth);
+
+    positions.set(node.id, {
+        x: x,
+        y: 65 + depth * LEVEL_GAP
+    });
+
+    minX = Math.min(minX, x);
+    maxX = Math.max(maxX, x);
+
+    layout(
+        by.get(node.left),
+        depth + 1,
+        x - spread,
+        spread / 2
+    );
+
+    layout(
+        by.get(node.right),
+        depth + 1,
+        x + spread,
+        spread / 2
+    );
+}
+
+// Start at zero; center the finished layout afterwards.
+
+layout(root, 0, 600, HORIZONTAL_GAP * 2);
+
+const TREE_PADDING = 80;
+const width = Math.max(360, maxX - minX + TREE_PADDING * 2);
+const height = Math.max(150, (maxDepth + 1) * LEVEL_GAP + 35);
+
+// Shift all nodes so the tree is centered in its drawing area.
+positions.forEach(p => {
+    p.x = p.x - minX + TREE_PADDING;
+});
+
+    const edges = [];
+
+    nodes.forEach(parent => {
+        const p = positions.get(parent.id);
+        if(!p) return;
+
+        [parent.left,parent.right].forEach((childId,index) => {
+            if(childId === null || childId === undefined) return;
+
+            const c = positions.get(childId);
+            if(!c) return;
+
+            edges.push(`
+                <line
+                    x1="${p.x}"
+                    y1="${p.y+19}"
+                    x2="${c.x}"
+                    y2="${c.y-22}"
+                    stroke="#64748b"
+                    stroke-width="2.5"
+                    marker-end="url(#treeArrow)"
+                />
+            `);
+        });
+    });
+
+    const nodeElements = nodes.map(n => {
+        const p = positions.get(n.id);
+        if(!p) return '';
+
+        return `
+            <div
+                class="tree-node ${hl.includes(n.value)?'hl':''}"
+                data-inspect-index="${esc(n.value)}"
+                tabindex="0"
+                title="Click node ${esc(n.value)} to inspect"
+                style="
+                    position:absolute;
+                    left:${p.x}px;
+                    top:${p.y}px;
+                    transform:translate(-50%,-50%);
+                    z-index:2;
+                "
+            >
+                <span>${esc(n.value)}</span>
+                <small>${n.left!==null && n.left!==undefined?'L ':''}${n.right!==null && n.right!==undefined?'R':''}</small>
+            </div>
+        `;
+    }).join('');
+
+    $('visualArea').innerHTML = `
+        <div class="tree-stage" style="overflow-x:auto;">
+            ${label?`<div class="pointer-label">${esc(label)}</div>`:''}
+
+            <div style="
+                position:relative;
+                width:${width}px;
+                height:${height}px;
+                margin:20px auto;
+            ">
+
+                <svg
+                    width="${width}"
+                    height="${height}"
+                    viewBox="0 0 ${width} ${height}"
+                    style="position:absolute;inset:0;z-index:1;overflow:visible;"
+                >
+                    <defs>
+                        <marker
+                            id="treeArrow"
+                            markerWidth="10"
+                            markerHeight="10"
+                            refX="7"
+                            refY="3"
+                            orient="auto"
+                            markerUnits="strokeWidth"
+                        >
+                            <path
+                                d="M0,0 L0,6 L8,3 z"
+                                fill="#64748b"
+                            />
+                        </marker>
+                    </defs>
+
+                    ${edges.join('')}
+                </svg>
+
+                ${nodeElements}
+            </div>
+        </div>
+    `;
+}
 function graphVis(g,hl=[],label=''){count(g.nodes.length);if(!g.nodes.length){$('visualArea').innerHTML='<div class="empty"><div class="big">◈</div>Add vertices to build the graph.</div>';return}const n=g.nodes.length,pts=g.nodes.map((v,i)=>({x:50+37*Math.cos(2*Math.PI*i/n-Math.PI/2),y:50+37*Math.sin(2*Math.PI*i/n-Math.PI/2)}));let svg='<svg class="graph-svg" viewBox="0 0 600 280">';g.edges.forEach(e=>{const a=g.nodes.indexOf(e[0]),b=g.nodes.indexOf(e[1]);if(a>=0&&b>=0){const A=pts[a],B=pts[b];svg+=`<line x1="${A.x*6}" y1="${A.y*2.8}" x2="${B.x*6}" y2="${B.y*2.8}" class="graph-edge-svg"/>`}});g.nodes.forEach((v,i)=>{const p=pts[i];svg+=`<g class="graph-svg-node ${hl.includes(v)?'selected':''}"><circle cx="${p.x*6}" cy="${p.y*2.8}" r="24"/><text x="${p.x*6}" y="${p.y*2.8+5}" text-anchor="middle">${esc(v)}</text></g>`});svg+='</svg>';$('visualArea').innerHTML=`<div class="graph-stage">${label?`<div class="pointer-label">${esc(label)}</div>`:''}${svg}<div class="edge-list">${g.edges.map(e=>`<span>${esc(e[0])} ↔ ${esc(e[1])}</span>`).join('')||'No edges yet'}</div></div>`}
 function hashVis(b,hl=-1,label=''){count(b.reduce((n,x)=>n+x.length,0));$('visualArea').innerHTML=`<div class="hash-grid">${b.map((x,i)=>`<div class="bucket ${i===hl?'hl':''}"><b>Bucket ${i}</b><div>${x.length?x.map(esc).join(' → '):'—'}</div></div>`).join('')}</div>${label?`<div class="pointer-label hash-label">${esc(label)}</div>`:''}`}
 function inputs(){
@@ -318,7 +480,7 @@ const DSA_TOPICS={
  graph:{title:'Graph',summary:'A graph contains vertices connected by edges and can represent networks and relationships.',time:'BFS/DFS O(V + E)',space:'O(V)',steps:['Create vertices.','Connect related vertices with edges.','BFS explores level by level using a queue.','DFS explores deeply using recursion or a stack.'],visual:'graph'},
  hashing:{title:'Hashing',summary:'A hash function maps a key to a bucket for fast average-case lookup.',time:'Average search/insert O(1); worst O(n)',space:'O(n)',steps:['Take a key such as 42.','Compute a bucket index such as key % 10.','Store the key in that bucket.','Handle collisions using a chain or another collision strategy.'],visual:'hash'},
  searching:{title:'Searching',summary:'Linear search checks elements sequentially; binary search repeatedly halves a sorted search range.',time:'Linear O(n); Binary O(log n)',space:'Linear O(1) extra; binary O(1) iterative extra',steps:['Choose a target value.','Linear search checks from left to right.','Binary search needs sorted data.','Binary search compares the middle and discards half the range.'],visual:'search'},
- sorting:{title:'Sorting',summary:'Sorting arranges values according to an ordering rule.',time:'Bubble/Selection/Insertion O(n²) worst; Merge O(n log n)',space:'Merge sort O(n) auxiliary; simple sorts O(1) auxiliary',steps:['Start with an unsorted sequence.','Compare or select values according to the algorithm.','Move values toward their final positions.','Repeat until the sequence is ordered.'],visual:'sort'}
+ sorting:{title:'Sorting',summary:'Sorting arranges values according to an ordering rule.',time:'Bubble/Selection/Insertion O(n²) worst; Merge O(n log n);Quick O(n log n) average, O(n²) worst.',space:'Merge Sort: O(n) auxiliary; Quick Sort: O(n) average recursion space with this implementation; Bubble, Selection and Insertion: O(1) auxiliary.',steps:['Start with an unsorted sequence.','Compare or select values according to the algorithm.','Move values toward their final positions.','Repeat until the sequence is ordered.'],visual:'sort'}
 };
 const NOTES=[
  ['OOP','Class & Object','Class = blueprint. Object = instance of a class.'],['OOP','Encapsulation','Use private data and public methods to control access.'],['OOP','Abstraction','Expose essential operations and hide implementation details.'],['OOP','Inheritance','Derived classes reuse and extend base-class behavior.'],['OOP','Polymorphism','Compile-time: overloading. Runtime: virtual functions/overriding.'],['OOP','Constructor','Runs when an object is created and initializes members.'],['OOP','Destructor','Runs when an object lifetime ends and performs cleanup.'],['OOP','Composition','HAS-A relationship: one class contains another object.'],['DSA','Array','Indexed, contiguous-style storage; direct access is O(1).'],['DSA','Linked List','Nodes connected by NEXT references; sequential access is O(n).'],['DSA','Doubly Linked List','Nodes contain PREV and NEXT references, enabling traversal in both directions.'],['DSA','Stack','LIFO; Push, Pop and Peek are typically O(1).'],['DSA','Queue','FIFO; Enqueue/Dequeue can be O(1) with a suitable implementation.'],['DSA','Binary Tree','Each node has at most two children.'],['DSA','BST','Left subtree values are smaller and right subtree values are larger.'],['DSA','Graph','Vertices + edges; BFS/DFS are O(V+E).'],['DSA','Hashing','Maps keys to buckets; average lookup is O(1).'],['Algorithms','Linear Search','Checks elements one by one; O(n).'],['Algorithms','Binary Search','Requires sorted data; O(log n).'],['Algorithms','Bubble Sort','Repeatedly compares adjacent elements; O(n²) worst.'],['Algorithms','Selection Sort','Selects the smallest remaining element; O(n²).'],['Algorithms','Insertion Sort','Inserts each item into the sorted left portion; O(n²) worst.'],['Algorithms','Merge Sort','Divide and conquer sorting; O(n log n), O(n) auxiliary space.'],['Analysis','Big-O','Describes asymptotic growth of time or space as n increases.']
@@ -433,6 +595,29 @@ function renderNotes() {
     category.addEventListener('change', renderNotes);
   }
 }
+function setupActiveButtons() {
+    const area = $('controlsArea');
+
+    if (area.dataset.activeButtonsReady === 'true') return;
+
+    area.dataset.activeButtonsReady = 'true';
+
+    area.addEventListener('click', function(event) {
+        const button = event.target.closest('.btns button');
+
+        if (!button || !area.contains(button)) return;
+
+        const group = button.closest('.btns');
+
+        // Remove the active style from other buttons in this group
+        group.querySelectorAll('button').forEach(btn => {
+            btn.classList.remove('primary');
+        });
+
+        // Highlight the clicked button
+        button.classList.add('primary');
+    });
+}
 function controls(){let h='';if(moduleName==='oop')h=conceptControls('oop');else if(moduleName==='dsa-concepts')h=conceptControls('dsa');else if(moduleName==='notes'){h='<div class="form"><div class="help"><b>Notes & Revision:</b> Search definitions, relationships and complexity reminders. The full notes collection appears in the visualization area.</div><button class="btn primary full" type="button" onclick="renderNotes()">Open Notes</button></div>';}else if(moduleName==='array')h=`<div class="form"><div class="two"><div class="field"><label>NUMBER OF ELEMENTS</label><input id="array-n" type="number" min="1" max="30" placeholder="5"></div><button class="btn" onclick="makeArrayFields()">Generate Input Fields</button></div><div id="arrayFields" class="generated-grid"></div><button class="btn primary full" onclick="run('create')">Create Array</button><div class="two"><div class="field"><label>INDEX</label><input id="array-index" type="number" placeholder="2"></div><div class="field"><label>VALUE</label><input id="array-value" type="number" placeholder="99"></div></div><div class="btns"><button class="btn primary" onclick="run('insert')">＋ Insert</button><button class="btn danger" onclick="run('delete')">− Delete</button><button class="btn" onclick="run('search')">⌕ Search</button><button class="btn" onclick="run('traverse')">→ Traverse</button></div><div class="help">Creation follows the same logic as a C++ loop: <b>for (int i = 0; i &lt; n; i++) cin &gt;&gt; arr[i];</b></div></div>`;
 else if(moduleName==='doubly-linked-list')h=`<div class="form"><div class="field"><label>VALUES</label><input id="dlinked-values" name="dlinked_values_fresh" autocomplete="off" spellcheck="false" placeholder="10,20,30,40"></div><button class="btn primary full" onclick="run('create')">Create Doubly Linked List</button><div class="two"><div class="field"><label>POSITION</label><input id="dlinked-index" name="dlinked_index_fresh" type="number" autocomplete="off" placeholder="1"></div><div class="field"><label>VALUE</label><input id="dlinked-value" name="dlinked_value_fresh" type="number" autocomplete="off" placeholder="99"></div></div><div class="btns"><button class="btn primary" onclick="run('insert')">＋ Insert</button><button class="btn danger" onclick="run('delete')">− Delete</button><button class="btn" onclick="run('traverse')">⇄ Traverse</button><button class="btn" onclick="run('reverse')">↶ Reverse</button></div><div class="help"><b>Two-way pointers:</b> PREV moves backward and NEXT moves forward. Try clicking a node after creation.</div></div>`;
 else if(moduleName==='linked-list')h=`<div class="form"><div class="field"><label>VALUES</label><input id="linked-values"name="linked_values_${Date.now()}"autocomplete="off"spellcheck="false"value=""placeholder="10,20,30,40,50"></div><button class="btn primary full" onclick="run('create')">Create List</button><div class="two"><div class="field"><label>POSITION</label><input id="linked-index" name="linked_list_index_fresh" type="number" autocomplete="off" placeholder="1"></div><div class="field"><label>VALUE</label><input id="linked-value" name="linked_list_value_fresh" type="number" autocomplete="off" placeholder="99"></div></div><div class="btns"><button class="btn primary" onclick="run('insert')">＋ Insert</button><button class="btn danger" onclick="run('delete')">− Delete</button><button class="btn" onclick="run('traverse')">→ Traverse</button><button class="btn" onclick="run('reverse')">↶ Reverse</button></div></div>`;
@@ -442,7 +627,14 @@ else if(moduleName==='tree')h=`<div class="form"><div class="field"><label>VALUE
 else if(moduleName==='graph')h=`<div class="form"><div class="two"><div class="field"><label>VERTEX</label><input id="graph-vertex" name="graph_vertex_fresh" autocomplete="off" placeholder="A"></div><button class="btn primary" onclick="run('addVertex')">＋ Add Vertex</button></div><div class="two"><div class="field"><label>FROM</label><input id="graph-from" name="graph_from_fresh" autocomplete="off" placeholder="A"></div><div class="field"><label>TO</label><input id="graph-to" name="graph_to_fresh" autocomplete="off" placeholder="B"></div></div><button class="btn primary full" onclick="run('addEdge')">Connect Edge</button><div class="two"><div class="field"><label>START VERTEX</label><input id="graph-start" name="graph_start_fresh" autocomplete="off" placeholder="A"></div><button class="btn" onclick="run('bfs')">BFS</button></div><button class="btn" onclick="run('dfs')">DFS</button></div>`;
 else if(moduleName==='hashing')h=`<div class="form"><div class="field"><label>KEY</label><input id="hash-value" name="hash_value_fresh" type="number" autocomplete="off" placeholder="42"></div><div class="btns"><button class="btn primary" onclick="run('insert')">＋ Insert</button><button class="btn danger" onclick="run('delete')">− Delete</button><button class="btn" onclick="run('search')">⌕ Search</button><button class="btn" onclick="run('display')">Display</button></div><div class="help">Hash function: <b>index = |key| % 10</b>. Collisions stay together in a bucket chain.</div></div>`;
 else if(moduleName==='searching')h=`<div class="form"><div class="field"><label>ARRAY</label><input id="search-values" name="search_values_fresh" autocomplete="new-password" spellcheck="false" placeholder="10,20,30,40,50"></div><div class="field"><label>SEARCH VALUE</label><input id="search-value" name="search_value_fresh" type="number" autocomplete="off" placeholder="30"></div><div class="btns"><button class="btn primary" onclick="run('linear')">Linear Search</button><button class="btn" onclick="run('binary')">Binary Search</button></div></div>`;
-else h=`<div class="form"><div class="field"><label>ARRAY</label><input id="sort-values" name="sort_values_fresh" autocomplete="new-password" placeholder="50,20,40,10,30"></div><div class="btns"><button class="btn primary" onclick="run('bubble')">Bubble Sort</button><button class="btn" onclick="run('selection')">Selection Sort</button><button class="btn" onclick="run('insertion')">Insertion Sort</button></div></div>`;$('controlsArea').innerHTML=h; clearCurrentModuleInputs()}
+else h=`<div class="form"><div class="field"><label>ARRAY</label><input id="sort-values" name="sort_values_fresh" autocomplete="new-password" placeholder="50,20,40,10,30"></div><div class="btns">
+<button class="btn primary" onclick="run('bubble')">Bubble Sort</button>
+<button class="btn" onclick="run('selection')">Selection Sort</button>
+<button class="btn" onclick="run('insertion')">Insertion Sort</button>
+<button class="btn" onclick="run('merge')">Merge Sort</button>
+<button class="btn" onclick="run('quick')">Quick Sort</button>
+</div></div> `;$('controlsArea').innerHTML=h; setupActiveButtons(); clearCurrentModuleInputs()}
+
 function clearCurrentModuleInputs(){
   document.querySelectorAll('#controlsArea input').forEach((el)=>{
     el.value='';
@@ -457,12 +649,224 @@ function clearCurrentModuleInputs(){
 }
 function parseVals(s){const raw=String(s??'').trim();if(!raw)throw Error('Enter comma-separated numeric values.');const parts=raw.split(',').map(x=>x.trim());if(parts.some(x=>x===''))throw Error('Do not leave an empty value between commas.');if(parts.some(x=>!/^[-+]?\d+(?:\.\d+)?$/.test(x)))throw Error('Use only numbers separated by commas, for example: 10,20,30,40.');const a=parts.map(Number);if(a.some(x=>!Number.isFinite(x)))throw Error('Enter valid numeric values.');return a}
 function detailed(op,d,raw,before,after){const o=op.toLowerCase(),a=before.array||[],f=after.array||[];if(o.includes('create array'))return d.steps;if(o==='insertion'||o==='deletion'||o==='traversal'||o.includes('search')||o.includes('sort'))return d.steps;if(o.includes('linked list'))return d.steps;if(o.startsWith('stack')||o.startsWith('queue')||o.includes('tree')||o==='bfs'||o==='dfs'||o.includes('hash'))return d.steps;return d.steps||[]}
-function arrayFrames(d,before,after,raw){const op=d.operation.toLowerCase(),a=before.array||[],f=after.array||[],fs=[];if(op.includes('create array')){fs.push(frame('Begin with an empty array. The program first asks the user for the number of elements.',{array:[]},{pointerLabel:'START CREATION'}));for(let i=0;i<f.length;i++){fs.push(frame(`Loop iteration ${i+1}: i = ${i}. Read the value ${f[i]} from the user and store it at array index ${i}.`,{array:f.slice(0,i).concat(['']).concat(Array(Math.max(0,f.length-i-1)).fill(''))},{pointer:i,pointerLabel:`arr[${i}] = ${f[i]}`}));}fs.push(frame(`The loop finishes after i reaches ${f.length}. Final array: [${f.join(', ')}].`,{array:f},{pointerLabel:'ARRAY CREATED'}));}
+function arrayFrames(d,before,after,raw){
+    const op = d.operation.toLowerCase();
+
+   // Use the original input whenever the sorting module is active
+const a = (moduleName === 'sorting' || moduleName === 'searching')
+    ? parseVals(raw.values)
+    : (before.array || []);
+    // Final result returned by the backend
+    const f = after.array || [];
+
+    const fs = [];
+if(op.includes('create array')){fs.push(frame('Begin with an empty array. The program first asks the user for the number of elements.',{array:[]},{pointerLabel:'START CREATION'}));for(let i=0;i<f.length;i++){fs.push(frame(`Loop iteration ${i+1}: i = ${i}. Read the value ${f[i]} from the user and store it at array index ${i}.`,{array:f.slice(0,i).concat(['']).concat(Array(Math.max(0,f.length-i-1)).fill(''))},{pointer:i,pointerLabel:`arr[${i}] = ${f[i]}`}));}fs.push(frame(`The loop finishes after i reaches ${f.length}. Final array: [${f.join(', ')}].`,{array:f},{pointerLabel:'ARRAY CREATED'}));}
 else if(op==='insertion'){const p=Number(raw.index),v=Number(raw.value);fs.push(frame(`Target index ${p} is selected. The existing array is [${a.join(', ')}].`,{array:a},{pointer:p,pointerLabel:`TARGET INDEX ${p}`}));let s=a.slice();s.push('');for(let i=a.length-1;i>=p;i--){s[i+1]=s[i];s[i]='';fs.push(frame(`Move ${a[i]} from index ${i} to index ${i+1}. This shift creates room at index ${i}.`,{array:s},{highlight:[i,i+1],pointer:i,pointerLabel:`SHIFT ${a[i]} → ${i+1}`}));}s[p]=v;fs.push(frame(`Write the new value ${v} into the open slot at index ${p}.`,{array:s},{highlight:[p],pointer:p,pointerLabel:'INSERT'}));fs.push(frame(`Insertion is complete.`,{array:f},{highlight:[p],pointerLabel:'FINAL ARRAY'}));}
 else if(op==='deletion'){const p=Number(raw.index);fs.push(frame(`Select ${a[p]} at index ${p} for deletion.`,{array:a},{highlight:[p],pointer:p,pointerLabel:'DELETE'}));let s=a.slice();for(let i=p;i<a.length-1;i++){s[i]=s[i+1];fs.push(frame(`Copy ${a[i+1]} from index ${i+1} to index ${i} to close the gap.`,{array:s},{highlight:[i,i+1],pointer:i,pointerLabel:'SHIFT LEFT'}));}s.pop();fs.push(frame(`Remove the extra final slot.`,{array:s},{pointerLabel:'RESIZE'}));fs.push(frame(`Deletion is complete.`,{array:f},{pointerLabel:'FINAL ARRAY'}));}
 else if(op.includes('linear search')){for(let i=0;i<a.length;i++){fs.push(frame(`Compare target ${raw.value} with value ${a[i]} at index ${i}.`,{array:a},{highlight:[i],pointer:i,pointerLabel:`CHECK index ${i}`}));if(a[i]===Number(raw.value)){fs.push(frame(`Match found: ${raw.value} is stored at index ${i}. Stop.`,{array:a},{highlight:[i],pointer:i,pointerLabel:'FOUND'}));break}}if(!a.includes(Number(raw.value)))fs.push(frame(`All indices were checked. ${raw.value} is not present.`,{array:a},{pointerLabel:'NOT FOUND'}));}
 else if(op.includes('binary search')){const x=a.slice().sort((x,y)=>x-y);let l=0,h=x.length-1;fs.push(frame(`Binary search uses sorted data: [${x.join(', ')}]. LEFT = 0 and RIGHT = ${h}.`,{array:x},{pointerLabel:'SEARCH RANGE'}));while(l<=h){const m=Math.floor((l+h)/2);fs.push(frame(`Calculate MID = floor((${l}+${h})/2) = ${m}. Compare ${x[m]} with target ${raw.value}.`,{array:x},{highlight:[m],pointer:m,pointerLabel:`MID = ${m}`}));if(x[m]===Number(raw.value)){fs.push(frame(`The middle value matches ${raw.value}. Search succeeds.`,{array:x},{highlight:[m],pointer:m,pointerLabel:'FOUND'}));break}if(x[m]<Number(raw.value))l=m+1;else h=m-1}if(!x.includes(Number(raw.value)))fs.push(frame(`No search range remains. Target is not found.`,{array:x},{pointerLabel:'NOT FOUND'}));}
-else if(op.includes('sort')){let s=a.slice();if(op.includes('bubble')){for(let p=0;p<s.length-1;p++)for(let j=0;j<s.length-p-1;j++){fs.push(frame(`Pass ${p+1}: compare adjacent values ${s[j]} and ${s[j+1]}.`,{array:s},{highlight:[j,j+1],pointer:j,pointerLabel:'COMPARE'}));if(s[j]>s[j+1]){[s[j],s[j+1]]=[s[j+1],s[j]];fs.push(frame(`They are out of order, so swap them.`,{array:s},{highlight:[j,j+1],pointer:j,pointerLabel:'SWAP'}));}}}else if(op.includes('selection')){for(let i=0;i<s.length-1;i++){let m=i;fs.push(frame(`Start position ${i}. Assume ${s[i]} is the smallest remaining value.`,{array:s},{highlight:[i],pointer:i,pointerLabel:'CURRENT MINIMUM'}));for(let j=i+1;j<s.length;j++){fs.push(frame(`Compare candidate ${s[j]} at index ${j} with current minimum ${s[m]}.`,{array:s},{highlight:[m,j],pointer:j,pointerLabel:'COMPARE'}));if(s[j]<s[m])m=j}if(m!==i){[s[i],s[m]]=[s[m],s[i]];fs.push(frame(`Place the smallest value ${s[i]} into sorted position ${i}.`,{array:s},{highlight:[i],pointer:i,pointerLabel:'PLACE MINIMUM'}));}}}else{for(let i=1;i<s.length;i++){const key=s[i];let j=i-1;fs.push(frame(`Take ${key} as the KEY. The left portion is already sorted.`,{array:s},{highlight:[i],pointer:i,pointerLabel:`KEY = ${key}`}));while(j>=0&&s[j]>key){s[j+1]=s[j];fs.push(frame(`Shift ${s[j]} one position right because it is greater than KEY ${key}.`,{array:s},{highlight:[j,j+1],pointer:j,pointerLabel:'SHIFT'}));j--}s[j+1]=key;fs.push(frame(`Insert KEY ${key} at index ${j+1}.`,{array:s},{highlight:[j+1],pointer:j+1,pointerLabel:'INSERT KEY'}));}}fs.push(frame(`Sorting is complete. FINAL ARRAY = [${f.join(', ')}].`,{array:f},{pointerLabel:'FINAL SORTED ARRAY'}));}return fs}
+else if(op.includes('sort')){
+let s=a.slice();
+
+if (op.includes('merge')) {
+
+    function mergeSortVisual(left, right) {
+        if (left >= right) return;
+
+        const mid = Math.floor((left + right) / 2);
+
+        // Show the division of the array
+        fs.push(frame(
+            `Divide array into two halves: indexes ${left} to ${mid} and ${mid + 1} to ${right}.`,
+            { array: s.slice() },
+            {
+                highlight: Array.from(
+                    { length: right - left + 1 },
+                    (_, i) => left + i
+                ),
+                pointerLabel: 'DIVIDE'
+            }
+        ));
+
+        mergeSortVisual(left, mid);
+        mergeSortVisual(mid + 1, right);
+
+        const L = s.slice(left, mid + 1);
+        const R = s.slice(mid + 1, right + 1);
+
+        let i = 0, j = 0, k = left;
+
+        // Compare and merge
+        while (i < L.length && j < R.length) {
+
+            fs.push(frame(
+                `Compare ${L[i]} and ${R[j]}.`,
+                { array: s.slice() },
+                {
+                    highlight: [left + i, mid + 1 + j],
+                    pointerLabel: 'COMPARE'
+                }
+            ));
+
+            if (L[i] <= R[j]) {
+                s[k] = L[i++];
+            } else {
+                s[k] = R[j++];
+            }
+
+            fs.push(frame(
+                `Place ${s[k]} at position ${k}.`,
+                { array: s.slice() },
+                {
+                    highlight: [k],
+                    pointerLabel: 'PLACE'
+                }
+            ));
+
+            k++;
+        }
+
+        // Copy remaining values
+        while (i < L.length) {
+            s[k] = L[i++];
+
+            fs.push(frame(
+                `Copy remaining value ${s[k]}.`,
+                { array: s.slice() },
+                {
+                    highlight: [k],
+                    pointerLabel: 'COPY'
+                }
+            ));
+
+            k++;
+        }
+
+        while (j < R.length) {
+            s[k] = R[j++];
+
+            fs.push(frame(
+                `Copy remaining value ${s[k]}.`,
+                { array: s.slice() },
+                {
+                    highlight: [k],
+                    pointerLabel: 'COPY'
+                }
+            ));
+
+            k++;
+        }
+
+        fs.push(frame(
+            `The section from index ${left} to ${right} is sorted.`,
+            { array: s.slice() },
+            {
+                highlight: Array.from(
+                    { length: right - left + 1 },
+                    (_, i) => left + i
+                ),
+                pointerLabel: 'MERGED'
+            }
+        ));
+    }
+
+    fs.push(frame(
+        'Starting Merge Sort.',
+        { array: s.slice() },
+        { pointerLabel: 'START' }
+    ));
+
+    mergeSortVisual(0, s.length - 1);
+    fs.push(frame(
+    `Merge Sort completed. Final array: [${s.join(', ')}].`,
+    { array: s.slice() },
+    { pointerLabel: 'FINAL SORTED ARRAY' }
+));
+    return fs;
+}
+
+if (op.includes('quick')) {
+
+    function quickSortVisual(low, high) {
+
+        if (low >= high) return;
+
+        const pivot = s[high];
+
+        fs.push(frame(
+            `Select ${pivot} as the pivot.`,
+            { array: s.slice() },
+            {
+                highlight: [high],
+                pointerLabel: 'PIVOT'
+            }
+        ));
+
+        let i = low - 1;
+
+        for (let j = low; j < high; j++) {
+
+            fs.push(frame(
+                `Compare ${s[j]} with pivot ${pivot}.`,
+                { array: s.slice() },
+                {
+                    highlight: [j, high],
+                    pointerLabel: 'COMPARE'
+                }
+            ));
+
+            if (s[j] <= pivot) {
+                i++;
+
+                if (i !== j) {
+                    [s[i], s[j]] = [s[j], s[i]];
+
+                    fs.push(frame(
+                        `Swap ${s[j]} and ${s[i]}.`,
+                        { array: s.slice() },
+                        {
+                            highlight: [i, j],
+                            pointerLabel: 'SWAP'
+                        }
+                    ));
+                }
+            }
+        }
+
+        const pivotIndex = i + 1;
+
+        [s[pivotIndex], s[high]] =
+            [s[high], s[pivotIndex]];
+
+        fs.push(frame(
+            `Place pivot ${pivot} in its correct position.`,
+            { array: s.slice() },
+            {
+                highlight: [pivotIndex],
+                pointerLabel: 'PIVOT PLACED'
+            }
+        ));
+
+        quickSortVisual(low, pivotIndex - 1);
+        quickSortVisual(pivotIndex + 1, high);
+    }
+
+    fs.push(frame(
+        'Starting Quick Sort.',
+        { array: s.slice() },
+        { pointerLabel: 'START' }
+    ));
+
+    quickSortVisual(0, s.length - 1);
+    fs.push(frame(
+    `Quick Sort completed. Final array: [${s.join(', ')}].`,
+    { array: s.slice() },
+    { pointerLabel: 'FINAL SORTED ARRAY' }
+    ));
+    return fs;
+}
+
+if(op.includes('bubble')){for(let p=0;p<s.length-1;p++)for(let j=0;j<s.length-p-1;j++){fs.push(frame(`Pass ${p+1}: compare adjacent values ${s[j]} and ${s[j+1]}.`,{array:s},{highlight:[j,j+1],pointer:j,pointerLabel:'COMPARE'}));if(s[j]>s[j+1]){[s[j],s[j+1]]=[s[j+1],s[j]];fs.push(frame(`They are out of order, so swap them.`,{array:s},{highlight:[j,j+1],pointer:j,pointerLabel:'SWAP'}));}}}else if(op.includes('selection')){for(let i=0;i<s.length-1;i++){let m=i;fs.push(frame(`Start position ${i}. Assume ${s[i]} is the smallest remaining value.`,{array:s},{highlight:[i],pointer:i,pointerLabel:'CURRENT MINIMUM'}));for(let j=i+1;j<s.length;j++){fs.push(frame(`Compare candidate ${s[j]} at index ${j} with current minimum ${s[m]}.`,{array:s},{highlight:[m,j],pointer:j,pointerLabel:'COMPARE'}));if(s[j]<s[m])m=j}if(m!==i){[s[i],s[m]]=[s[m],s[i]];fs.push(frame(`Place the smallest value ${s[i]} into sorted position ${i}.`,{array:s},{highlight:[i],pointer:i,pointerLabel:'PLACE MINIMUM'}));}}}else{for(let i=1;i<s.length;i++){const key=s[i];let j=i-1;fs.push(frame(`Take ${key} as the KEY. The left portion is already sorted.`,{array:s},{highlight:[i],pointer:i,pointerLabel:`KEY = ${key}`}));while(j>=0&&s[j]>key){s[j+1]=s[j];fs.push(frame(`Shift ${s[j]} one position right because it is greater than KEY ${key}.`,{array:s},{highlight:[j,j+1],pointer:j,pointerLabel:'SHIFT'}));j--}s[j+1]=key;fs.push(frame(`Insert KEY ${key} at index ${j+1}.`,{array:s},{highlight:[j+1],pointer:j+1,pointerLabel:'INSERT KEY'}));}}fs.push(frame(`Sorting is complete. FINAL ARRAY = [${f.join(', ')}].`,{array:f},{pointerLabel:'FINAL SORTED ARRAY'}));}return fs}
 function genericFrames(module,d,before,after,raw){
 
     if(['array','searching','sorting'].includes(module))
@@ -471,11 +875,14 @@ function genericFrames(module,d,before,after,raw){
     const fs=[];
 
     const a =
-        module === 'linked-list'
-            ? (after.linked || before.linked || [])
-            : module === 'doubly-linked-list'
-                ? (after.dlinked || before.dlinked || [])
-                : (after.array || before.array || []);if(module === 'linked-list'){
+    module === 'linked-list'
+        ? (after.linked || before.linked || [])
+        : module === 'doubly-linked-list'
+            ? (after.dlinked || before.dlinked || [])
+            : module === 'queue'
+                ? (after.queue || after.array || before.queue || before.array || [])
+                : (after.array || before.array || []);
+            if(module === 'linked-list'){
 
     const beforeList =
         before.linked || before.array || [];
@@ -1279,7 +1686,135 @@ function genericFrames(module,d,before,after,raw){
     );
 
     return fs;
-}if(moduleName==='doubly-linked-list'){if(d.operation==='Create Doubly Linked List'){fs.push(frame('HEAD points to node 0. PREV = NULL and NEXT points forward to node 1.',{array:a},{pointerIndex:0,pointerLabel:'HEAD → node 0'}));a.forEach((v,i)=>fs.push(frame(i===0?`Node 0: DATA = ${v}. PREV = NULL. NEXT points to node 1.`:i===a.length-1?`Node ${i}: DATA = ${v}. PREV points to node ${i-1}. NEXT = NULL.`:`Node ${i}: DATA = ${v}. PREV → node ${i-1}, NEXT → node ${i+1}.`,{array:a},{highlight:[i],pointerIndex:i,pointerLabel:`NODE ${i}`})));fs.push(frame(`The list can be traversed forward ${a.join(' → ')} and backward ${a.slice().reverse().join(' → ')}.`,{array:a},{pointerLabel:'TWO-WAY TRAVERSAL'}));}else a.forEach((v,i)=>fs.push(frame(`Node ${i}: DATA = ${v}. PREV ${i?'→ node '+(i-1):'= NULL'}; NEXT ${i<a.length-1?'→ node '+(i+1):'= NULL'}.`,{array:a},{highlight:[i],pointerIndex:i,pointerLabel:`NODE ${i}`})));if(!fs.length)fs.push(frame(d.message,{array:a}));return fs}if(moduleName==='stack'){const b=before.array||before.stack||[];const f=after.array||after.stack||[];const action=(d.operation||'').toLowerCase();if(action.includes('push')){const v=f[f.length-1];fs.push(frame(`Before PUSH, the stack is [${b.join(', ')}]. TOP is ${b.length?b[b.length-1]:'empty'}.`,{array:b},{pointerLabel:'BEFORE PUSH'}));fs.push(frame(`Create a new element containing ${v} and place it above the current TOP.`,{array:b.concat([v])},{highlight:[f.length-1],pointerLabel:'NEW ELEMENT'}));fs.push(frame(`Update TOP to point to ${v}. The resultant stack is [${f.join(', ')}].`,{array:f},{highlight:[f.length-1],pointerLabel:'TOP → '+v}));}else if(action.includes('pop')){const removed=b[b.length-1];fs.push(frame(`Before POP, TOP points to ${removed}.`,{array:b},{highlight:[b.length-1],pointerLabel:'TOP → '+removed}));fs.push(frame(`Remove the element ${removed} from TOP.`,{array:b.slice(0,-1)},{pointerLabel:'REMOVE TOP'}));fs.push(frame(`Move TOP to ${f.length?f[f.length-1]:'empty'}. Resultant stack: [${f.join(', ')}].`,{array:f},{highlight:f.length?[f.length-1]:[],pointerLabel:f.length?'TOP → '+f[f.length-1]:'STACK EMPTY'}));}else if(action.includes('peek')){fs.push(frame(`PEEK reads the current TOP without removing anything.`,{array:f},{highlight:[f.length-1],pointerLabel:'PEEK'}));fs.push(frame(`TOP = ${f[f.length-1]}. The stack remains unchanged: [${f.join(', ')}].`,{array:f},{highlight:[f.length-1],pointerLabel:'TOP → '+f[f.length-1]}));}else{fs.push(frame(`Display reads the stack from BOTTOM to TOP.`,{array:f},{pointerLabel:'DISPLAY'}));f.forEach((v,i)=>fs.push(frame(`Position ${i} contains ${v}${i===f.length-1?' and TOP points here.':'.'}`,{array:f},{highlight:[i],pointerLabel:i===f.length-1?'TOP':'POSITION '+i})));}if(!fs.length)fs.push(frame(d.message,{array:f}));return fs}if(moduleName==='queue'){a.forEach((v,i)=>fs.push(frame(`Queue position ${i} stores ${v}. ${i===0?'FRONT points here.':i===a.length-1?'REAR points here.':''}`,{array:a},{highlight:[i],pointerLabel:i===0?'FRONT':i===a.length-1?'REAR':'QUEUE'})));if(!fs.length)fs.push(frame(d.message,{array:a}));return fs}if(moduleName==='tree'){const n=after.nodes||[];(d.steps||[]).forEach((s,i)=>fs.push(frame(s,{nodes:n},{highlight:[],pointerLabel:`TREE STEP ${i+1}`})));fs.push(frame(d.message,{nodes:n},{highlight:d.highlight||[],pointerLabel:'FINAL TREE'}));return fs}if(moduleName==='graph'){(d.steps||[]).forEach((s,i)=>fs.push(frame(s,{graph:after.graph},{highlight:(d.highlight||[]).slice(0,Math.max(1,i+1)),pointerLabel:`GRAPH STEP ${i+1}`})));return fs}if(moduleName==='hashing'){const b=after.buckets||state.hash;for(let i=0;i<10;i++)fs.push(frame(`Inspect bucket ${i}. ${b[i].length?`It contains ${b[i].join(' → ')}.`:'It is empty.'}`,{buckets:b},{highlight:i,pointerLabel:`BUCKET ${i}`}));return fs}return [frame(d.message,after)]}
+}if(moduleName==='doubly-linked-list'){if(d.operation==='Create Doubly Linked List'){fs.push(frame('HEAD points to node 0. PREV = NULL and NEXT points forward to node 1.',{array:a},{pointerIndex:0,pointerLabel:'HEAD → node 0'}));a.forEach((v,i)=>fs.push(frame(i===0?`Node 0: DATA = ${v}. PREV = NULL. NEXT points to node 1.`:i===a.length-1?`Node ${i}: DATA = ${v}. PREV points to node ${i-1}. NEXT = NULL.`:`Node ${i}: DATA = ${v}. PREV → node ${i-1}, NEXT → node ${i+1}.`,{array:a},{highlight:[i],pointerIndex:i,pointerLabel:`NODE ${i}`})));fs.push(frame(`The list can be traversed forward ${a.join(' → ')} and backward ${a.slice().reverse().join(' → ')}.`,{array:a},{pointerLabel:'TWO-WAY TRAVERSAL'}));}else a.forEach((v,i)=>fs.push(frame(`Node ${i}: DATA = ${v}. PREV ${i?'→ node '+(i-1):'= NULL'}; NEXT ${i<a.length-1?'→ node '+(i+1):'= NULL'}.`,{array:a},{highlight:[i],pointerIndex:i,pointerLabel:`NODE ${i}`})));if(!fs.length)fs.push(frame(d.message,{array:a}));return fs}if(moduleName==='stack'){const b=before.array||before.stack||[];const f=d.array||after.array||after.stack||[];const action=(d.operation||'').toLowerCase();if(action.includes('push')){const v=f[f.length-1];fs.push(frame(`Before PUSH, the stack is [${b.join(', ')}]. TOP is ${b.length?b[b.length-1]:'empty'}.`,{array:b},{pointerLabel:'BEFORE PUSH'}));fs.push(frame(`Create a new element containing ${v} and place it above the current TOP.`,{array:b.concat([v])},{highlight:[f.length-1],pointerLabel:'NEW ELEMENT'}));fs.push(frame(`Update TOP to point to ${v}. The resultant stack is [${f.join(', ')}].`,{array:f},{highlight:[f.length-1],pointerLabel:'TOP → '+v}));}else if(action.includes('pop')){const removed=b[b.length-1];fs.push(frame(`Before POP, TOP points to ${removed}.`,{array:b},{highlight:[b.length-1],pointerLabel:'TOP → '+removed}));fs.push(frame(`Remove the element ${removed} from TOP.`,{array:b.slice(0,-1)},{pointerLabel:'REMOVE TOP'}));fs.push(frame(`Move TOP to ${f.length?f[f.length-1]:'empty'}. Resultant stack: [${f.join(', ')}].`,{array:f},{highlight:f.length?[f.length-1]:[],pointerLabel:f.length?'TOP → '+f[f.length-1]:'STACK EMPTY'}));}else if(action.includes('peek')){fs.push(frame(`PEEK reads the current TOP without removing anything.`,{array:f},{highlight:[f.length-1],pointerLabel:'PEEK'}));fs.push(frame(`TOP = ${f[f.length-1]}. The stack remains unchanged: [${f.join(', ')}].`,{array:f},{highlight:[f.length-1],pointerLabel:'TOP → '+f[f.length-1]}));}else{fs.push(frame(`Display reads the stack from BOTTOM to TOP.`,{array:f},{pointerLabel:'DISPLAY'}));f.forEach((v,i)=>fs.push(frame(`Position ${i} contains ${v}${i===f.length-1?' and TOP points here.':'.'}`,{array:f},{highlight:[i],pointerLabel:i===f.length-1?'TOP':'POSITION '+i})));}if(!fs.length)fs.push(frame(d.message,{array:f}));return fs}if(moduleName==='queue'){a.forEach((v,i)=>fs.push(frame(`Queue position ${i} stores ${v}. ${i===0?'FRONT points here.':i===a.length-1?'REAR points here.':''}`,{array:a},{highlight:[i],pointerLabel:i===0?'FRONT':i===a.length-1?'REAR':'QUEUE'})));if(!fs.length)fs.push(frame(d.message,{array:a}));return fs}
+if(moduleName==='tree'){
+
+    const oldNodes = before.tree || [];
+    const finalNodes = d.nodes || after.tree || oldNodes;
+
+    const oldIds = new Set(oldNodes.map(n => n.id));
+
+    const newNode = finalNodes.find(n => !oldIds.has(n.id));
+
+    const byId = new Map(finalNodes.map(n => [n.id,n]));
+
+    // Find the root node.
+    const childIds = new Set(
+        finalNodes.flatMap(n => [n.left,n.right])
+                  .filter(id => id !== null && id !== undefined)
+    );
+
+    const root = finalNodes.find(n => !childIds.has(n.id));
+
+    // Animate insertion progressively.
+    if(
+        (d.operation || '').toLowerCase().includes('insertion') &&
+        newNode &&
+        root
+    ){
+
+        const parent = finalNodes.find(
+            n => n.left === newNode.id || n.right === newNode.id
+        );
+
+        fs.push(frame(
+            'Start at the ROOT of the Binary Search Tree.',
+            {nodes:oldNodes},
+            {
+                highlight:[root.value],
+                pointerLabel:'ROOT'
+            }
+        ));
+
+        let current = root;
+
+        while(current && parent && current.id !== parent.id){
+
+            fs.push(frame(
+                `Compare ${newNode.value} with ${current.value}.`,
+                {nodes:oldNodes},
+                {
+                    highlight:[current.value],
+                    pointerLabel:`CURRENT → ${current.value}`
+                }
+            ));
+
+            const goLeft = newNode.value < current.value;
+
+            fs.push(frame(
+                goLeft
+                    ? `${newNode.value} is smaller. Move to the LEFT child.`
+                    : `${newNode.value} is greater. Move to the RIGHT child.`,
+                {nodes:oldNodes},
+                {
+                    highlight:[current.value],
+                    pointerLabel:goLeft?'MOVE LEFT':'MOVE RIGHT'
+                }
+            ));
+
+            const nextId = goLeft ? current.left : current.right;
+            current = byId.get(nextId);
+        }
+
+        if(parent){
+
+            const isLeft = parent.left === newNode.id;
+
+            fs.push(frame(
+                `The correct position is found. ${newNode.value} will be the ${isLeft?'LEFT':'RIGHT'} child of ${parent.value}.`,
+                {nodes:oldNodes},
+                {
+                    highlight:[parent.value],
+                    pointerLabel:'PARENT FOUND'
+                }
+            ));
+
+            fs.push(frame(
+                `Connect ${newNode.value} as the ${isLeft?'LEFT':'RIGHT'} child of ${parent.value}. The connecting arrow appears.`,
+                {nodes:finalNodes},
+                {
+                    highlight:[parent.value,newNode.value],
+                    pointerLabel:'NEW NODE CONNECTED'
+                }
+            ));
+        }
+
+        fs.push(frame(
+            `Insertion complete. ${newNode.value} is now part of the Binary Search Tree.`,
+            {nodes:finalNodes},
+            {
+                highlight:[newNode.value],
+                pointerLabel:'FINAL TREE'
+            }
+        ));
+
+        return fs;
+    }
+
+    // Keep normal tree animations for other operations.
+    (d.steps||[]).forEach((s,i)=>{
+        fs.push(frame(
+            s,
+            {nodes:finalNodes},
+            {
+                highlight:[],
+                pointerLabel:`TREE STEP ${i+1}`
+            }
+        ));
+    });
+
+    fs.push(frame(
+        d.message,
+        {nodes:finalNodes},
+        {
+            highlight:d.highlight||[],
+            pointerLabel:'FINAL TREE'
+        }
+    ));
+
+    return fs;
+}
+if(moduleName==='graph'){(d.steps||[]).forEach((s,i)=>fs.push(frame(s,{graph:after.graph},{highlight:(d.highlight||[]).slice(0,Math.max(1,i+1)),pointerLabel:`GRAPH STEP ${i+1}`})));return fs}if(moduleName==='hashing'){const b=after.buckets||state.hash;for(let i=0;i<10;i++)fs.push(frame(`Inspect bucket ${i}. ${b[i].length?`It contains ${b[i].join(' → ')}.`:'It is empty.'}`,{buckets:b},{highlight:i,pointerLabel:`BUCKET ${i}`}));return fs}return [frame(d.message,after)]}
 function setControlsDisabled(disabled){document.querySelectorAll('#controlsArea button,#controlsArea input').forEach(el=>{el.disabled=disabled});}
 async function run(action){if(busy||switching)return;const epoch=moduleEpoch;if(moduleName==='oop'){showConcept('oop');return}if(moduleName==='dsa-concepts'){showConcept('dsa');return}if(moduleName==='notes'){renderNotes();return}const before=JSON.parse(JSON.stringify(state)),raw=inputs();busy=true;setControlsDisabled(true);try{let d;if(moduleName==='array'){if(action==='create'){let vals=[...$('controlsArea').querySelectorAll('.arr-input')].map(e=>Number(e.value));if(!vals.length)throw Error('Enter number of elements and generate input fields.');if(vals.some(Number.isNaN))throw Error('Fill every generated input field.');d=await api('/array/create',{values:vals})}else if(action==='insert')d=await api('/array/insert',{position:Number(raw.index),value:Number(raw.value)});else if(action==='delete')d=await api('/array/delete',{position:Number(raw.index)});else if(action==='search')d=await api('/array/search',{value:Number(raw.value)});else d=await api('/array/traverse')}
 else if(moduleName==='linked-list'){

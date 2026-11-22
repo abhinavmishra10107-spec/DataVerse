@@ -345,8 +345,139 @@ app.post('/api/searching/binary',(req,res)=>{let a=(req.body.values||[]).map(Num
 function bubbleSort(input){let a=input.slice(),steps=[`Start with the unsorted array: [${a.join(', ')}].`],frames=[];for(let pass=0;pass<a.length-1;pass++){steps.push(`Begin pass ${pass+1}. The largest unsorted value will move toward the right end.`);for(let j=0;j<a.length-pass-1;j++){steps.push(`Compare adjacent values ${a[j]} at index ${j} and ${a[j+1]} at index ${j+1}.`);if(a[j]>a[j+1]){[a[j],a[j+1]]=[a[j+1],a[j]];steps.push(`They are out of order, so swap them. Current array: [${a.join(', ')}].`);}else steps.push(`They are already in increasing order, so no swap is needed.`);}}steps.push(`All passes are complete. Final sorted array: [${a.join(', ')}].`);return [a,steps];}
 function selectionSort(input){let a=input.slice(),steps=[`Start with the unsorted array: [${a.join(', ')}].`];for(let i=0;i<a.length-1;i++){let min=i;steps.push(`For position ${i}, assume ${a[i]} is the smallest remaining value.`);for(let j=i+1;j<a.length;j++){steps.push(`Compare candidate ${a[j]} at index ${j} with current minimum ${a[min]}.`);if(a[j]<a[min]){min=j;steps.push(`${a[j]} is smaller, so make index ${j} the new minimum.`);}}if(min!==i){steps.push(`Swap the value at index ${i} with the minimum at index ${min}.`);[a[i],a[min]]=[a[min],a[i]];steps.push(`Current array: [${a.join(', ')}].`);}else steps.push(`The value at index ${i} is already the minimum, so no swap is required.`);}steps.push(`Final sorted array: [${a.join(', ')}].`);return [a,steps];}
 function insertionSort(input){let a=input.slice(),steps=[`Start with the unsorted array: [${a.join(', ')}].`,`Treat the first element at index 0 as a sorted section.`];for(let i=1;i<a.length;i++){const key=a[i];let j=i-1;steps.push(`Take ${key} as the KEY at index ${i}.`);while(j>=0&&a[j]>key){steps.push(`${a[j]} is greater than KEY ${key}, so shift ${a[j]} from index ${j} to index ${j+1}.`);a[j+1]=a[j];j--;}a[j+1]=key;steps.push(`Insert KEY ${key} at index ${j+1}. Sorted section is now [${a.slice(0,i+1).join(', ')}].`);steps.push(`Current full array: [${a.join(', ')}].`);}steps.push(`Final sorted array: [${a.join(', ')}].`);return [a,steps];}
-for(const type of ['bubble','selection','insertion'])app.post('/api/sorting/'+type,(req,res)=>{const input=(req.body.values||[]).map(Number);if(!input.length||input.some(Number.isNaN))return res.status(400).json({error:'Enter a numeric array.'});let out,steps;if(type==='bubble')[out,steps]=bubbleSort(input);else if(type==='selection')[out,steps]=selectionSort(input);else [out,steps]=insertionSort(input);response(res,type[0].toUpperCase()+type.slice(1)+' Sort',{array:out,steps,complexity:C('O(n²)','O(1) auxiliary','Comparison-based in-place sorting.'),message:`Sorting completed. Final array: [${out.join(', ')}].`,meta:{before:input}});});
+function mergeSort(input) {
+    const steps = [`Start: [${input.join(', ')}]`];
 
+    function merge(left, right) {
+    const result = [];
+    let i = 0, j = 0;
+
+    while (i < left.length && j < right.length) {
+        if (left[i] <= right[j]) {
+            result.push(left[i++]);
+        } else {
+            result.push(right[j++]);
+        }
+    }
+
+    return result.concat(left.slice(i), right.slice(j));
+}
+
+    function divide(arr) {
+        if (arr.length <= 1) return arr;
+
+        const mid = Math.floor(arr.length / 2);
+
+        const left = divide(arr.slice(0, mid));
+        const right = divide(arr.slice(mid));
+
+        const merged = merge([...left], [...right]);
+
+        steps.push(
+            `Merge [${left.join(', ')}] and [${right.join(', ')}] → [${merged.join(', ')}]`
+        );
+
+        return merged;
+    }
+
+    const sorted = divide(input.slice());
+
+    steps.push(`Final sorted array: [${sorted.join(', ')}]`);
+
+    return [sorted, steps];
+}
+function quickSort(input) {
+    const steps = [];
+
+    function sort(arr) {
+        if (arr.length <= 1) return arr;
+
+        const pivot = arr[arr.length - 1];
+
+        const left = [];
+        const right = [];
+
+        for (let i = 0; i < arr.length - 1; i++) {
+            if (arr[i] <= pivot) {
+                left.push(arr[i]);
+            } else {
+                right.push(arr[i]);
+            }
+        }
+
+        steps.push(
+            `Pivot: ${pivot}. Left: [${left.join(', ')}], Right: [${right.join(', ')}]`
+        );
+
+        return [...sort(left), pivot, ...sort(right)];
+    }
+
+    const sorted = sort(input.slice());
+
+    steps.push(`Final sorted array: [${sorted.join(', ')}]`);
+
+    return [sorted, steps];
+}
+for (const type of [
+    'bubble',
+    'selection',
+    'insertion',
+    'merge',
+    'quick'
+]) {
+    app.post('/api/sorting/' + type, (req, res) => {
+        const input = (req.body.values || []).map(Number);
+
+        if (!input.length || input.some(n => !Number.isFinite(n))) {
+            return res.status(400).json({
+                error: 'Enter a numeric array.'
+            });
+        }
+
+        let out, steps;
+
+        if (type === 'bubble') {
+            [out, steps] = bubbleSort(input);
+        } else if (type === 'selection') {
+            [out, steps] = selectionSort(input);
+        } else if (type === 'insertion') {
+            [out, steps] = insertionSort(input);
+        } else if (type === 'merge') {
+            [out, steps] = mergeSort(input);
+        } else {
+            [out, steps] = quickSort(input);
+        }
+
+        const complexity = {
+            time: type === 'quick'
+                ? 'O(n log n) average; O(n²) worst'
+                : type === 'merge'
+                ? 'O(n log n)'
+                : 'O(n²)',
+            space: type === 'merge'
+                ? 'O(n) auxiliary'
+                : type === 'quick'
+                ? 'O(n) auxiliary in this implementation'
+                : 'O(1) auxiliary',
+            note: 'Comparison-based sorting.'
+        };
+
+        response(res,
+            type[0].toUpperCase() + type.slice(1) + ' Sort',
+            {
+                array: out,
+                steps,
+                complexity: C(
+                    complexity.time,
+                    complexity.space,
+                    complexity.note
+                ),
+                message: `Sorting completed. Final array: [${out.join(', ')}].`,
+                meta: { before: input }
+            }
+        );
+    });
+}
 
 // ---------------- DOUBLY LINKED LIST ----------------
 app.post('/api/doubly-linked-list/create', (req, res) => {
